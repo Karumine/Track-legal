@@ -500,6 +500,12 @@ body {
   color: var(--warning);
 }
 
+.status-badge.in-progress i {
+  animation: fa-spin 1.8s linear infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
 .status-badge.completed {
   background: var(--success-soft);
   color: var(--success);

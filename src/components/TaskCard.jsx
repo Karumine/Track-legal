@@ -2,7 +2,7 @@ import React from 'react';
 
 const STATUS_MAP = {
   pending: { label: 'รอดำเนินการ', icon: 'fa-clock' },
-  'in-progress': { label: 'กำลังทำ', icon: 'fa-spinner' },
+  'in-progress': { label: 'กำลังทำ', icon: 'fa-spinner fa-spin' },
   completed: { label: 'เสร็จแล้ว', icon: 'fa-circle-check' },
 };
 
