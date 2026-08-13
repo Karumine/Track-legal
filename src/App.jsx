@@ -6,13 +6,14 @@ import TaskDetail from './components/TaskDetail.jsx';
 import CreateTaskModal from './components/CreateTaskModal.jsx';
 import ManageUsers from './components/ManageUsers.jsx';
 import {
-  getUsers,
+  DEFAULT_USERS,
+  subscribeUsers,
+  subscribeTasks,
   getCurrentUser,
   setCurrentUser,
   logout as logoutUser,
   addUser,
   removeUser,
-  getTasks,
   createTask,
   addTaskUpdate,
   deleteTask,
@@ -40,18 +41,30 @@ function Toast({ toast, onHide }) {
 }
 
 export default function App() {
-  const [users, setUsers] = useState(getUsers());
+  const [users, setUsers] = useState(DEFAULT_USERS);
   const [currentUser, setCurrentUserState] = useState(getCurrentUser());
-  const [tasks, setTasks] = useState(getTasks());
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard'); // 'dashboard' | 'detail' | 'manage-users'
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Refresh data from localStorage
-  const refreshData = useCallback(() => {
-    setUsers(getUsers());
-    setTasks(getTasks());
+  // Subscribe to real-time Firestore data
+  useEffect(() => {
+    const unsubUsers = subscribeUsers((updatedUsers) => {
+      setUsers(updatedUsers);
+    });
+
+    const unsubTasks = subscribeTasks((updatedTasks) => {
+      setTasks(updatedTasks);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubTasks();
+    };
   }, []);
 
   const showToast = useCallback((message, type = 'success') => {
@@ -66,7 +79,6 @@ export default function App() {
   const handleLogin = (user) => {
     setCurrentUser(user);
     setCurrentUserState(user);
-    refreshData();
     showToast(`สวัสดี ${user.name}! 👋`);
   };
 
@@ -78,24 +90,36 @@ export default function App() {
   };
 
   // ---------- Users ----------
-  const handleAddUser = (name, emoji) => {
-    addUser(name, emoji);
-    refreshData();
-    showToast(`เพิ่มผู้ใช้ "${name}" แล้ว`);
+  const handleAddUser = async (name, emoji) => {
+    try {
+      await addUser(name, emoji);
+      showToast(`เพิ่มผู้ใช้ "${name}" แล้ว`);
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการเพิ่มผู้ใช้', 'error');
+    }
   };
 
-  const handleRemoveUser = (userId) => {
-    removeUser(userId);
-    refreshData();
-    showToast('ลบผู้ใช้แล้ว');
+  const handleRemoveUser = async (userId) => {
+    try {
+      await removeUser(userId);
+      showToast('ลบผู้ใช้แล้ว');
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการลบผู้ใช้', 'error');
+    }
   };
 
   // ---------- Tasks ----------
-  const handleCreateTask = (taskData) => {
-    createTask(taskData);
-    refreshData();
-    setShowCreateModal(false);
-    showToast('สร้างงานใหม่แล้ว! 📋');
+  const handleCreateTask = async (taskData) => {
+    try {
+      await createTask(taskData);
+      setShowCreateModal(false);
+      showToast('สร้างงานใหม่แล้ว! 📋');
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการสร้างงาน', 'error');
+    }
   };
 
   const handleTaskClick = (taskId) => {
@@ -103,25 +127,36 @@ export default function App() {
     setView('detail');
   };
 
-  const handleUpdateTask = (taskId, userId, message, newStatus) => {
-    addTaskUpdate(taskId, userId, message, newStatus);
-    refreshData();
-    // Update the selected task view
-    showToast('อัพเดทความคืบหน้าแล้ว! ✅');
+  const handleUpdateTask = async (taskId, userId, message, newStatus) => {
+    try {
+      await addTaskUpdate(taskId, userId, message, newStatus);
+      showToast('อัพเดทความคืบหน้าแล้ว! ✅');
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการอัพเดท', 'error');
+    }
   };
 
-  const handleEditTask = (taskId, updatedData) => {
-    updateTask(taskId, updatedData);
-    refreshData();
-    showToast('แก้ไขข้อมูลงานเรียบร้อย! ✏️');
+  const handleEditTask = async (taskId, updatedData) => {
+    try {
+      await updateTask(taskId, updatedData);
+      showToast('แก้ไขข้อมูลงานเรียบร้อย! ✏️');
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขงาน', 'error');
+    }
   };
 
-  const handleDeleteTask = (taskId) => {
-    deleteTask(taskId);
-    refreshData();
-    setView('dashboard');
-    setSelectedTaskId(null);
-    showToast('ลบงานแล้ว');
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await deleteTask(taskId);
+      setView('dashboard');
+      setSelectedTaskId(null);
+      showToast('ลบงานแล้ว');
+    } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการลบงาน', 'error');
+    }
   };
 
   const handleExportPdf = () => {

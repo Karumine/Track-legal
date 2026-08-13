@@ -1,85 +1,126 @@
-// ==========================================
-// localStorage Data Store
-// ==========================================
+import {
+  collection,
+  doc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  arrayUnion,
+} from 'firebase/firestore';
+import { db } from '../firebase.js';
 
 const STORAGE_KEYS = {
-  USERS: 'ltt_users',
-  TASKS: 'ltt_tasks',
   CURRENT_USER: 'ltt_current_user',
 };
 
-const DEFAULT_USERS = [
+export const DEFAULT_USERS = [
   { id: 'kay', name: 'พี่กาย', emoji: '👨‍💼' },
   { id: 'mai', name: 'น้องมาย', emoji: '👩‍💻' },
   { id: 'kob', name: 'พี่กบ', emoji: '🧑‍💼' },
 ];
 
-// ---------- Users ----------
-
-export function getUsers() {
-  const raw = localStorage.getItem(STORAGE_KEYS.USERS);
-  if (!raw) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-    return DEFAULT_USERS;
-  }
-  return JSON.parse(raw);
-}
-
-export function saveUsers(users) {
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-}
-
-export function addUser(name, emoji) {
-  const users = getUsers();
-  const id = 'user-' + Date.now().toString(36);
-  const newUser = { id, name, emoji };
-  users.push(newUser);
-  saveUsers(users);
-  return newUser;
-}
-
-export function removeUser(userId) {
-  let users = getUsers();
-  users = users.filter((u) => u.id !== userId);
-  saveUsers(users);
-}
-
-export function getUserById(userId) {
-  return getUsers().find((u) => u.id === userId) || null;
-}
-
-// ---------- Current User (Session) ----------
+// ---------- Current User (Session stored locally per device) ----------
 
 export function getCurrentUser() {
   const raw = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
   if (!raw) return null;
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export function setCurrentUser(user) {
-  localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+  if (!user) {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  } else {
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+  }
 }
 
 export function logout() {
   localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
 }
 
-// ---------- Tasks ----------
+// ---------- Users (Real-time Firestore) ----------
 
-export function getTasks() {
-  const raw = localStorage.getItem(STORAGE_KEYS.TASKS);
-  if (!raw) return [];
-  return JSON.parse(raw);
+export function subscribeUsers(onUpdate) {
+  const usersRef = collection(db, 'users');
+
+  return onSnapshot(
+    usersRef,
+    async (snapshot) => {
+      if (snapshot.empty) {
+        // Seed default users if collection is empty
+        for (const u of DEFAULT_USERS) {
+          await setDoc(doc(db, 'users', u.id), u);
+        }
+        onUpdate(DEFAULT_USERS);
+      } else {
+        const usersList = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }));
+        onUpdate(usersList);
+      }
+    },
+    (error) => {
+      console.error('Error listening to users:', error);
+      onUpdate(DEFAULT_USERS);
+    }
+  );
 }
 
-export function saveTasks(tasks) {
-  localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+export async function addUser(name, emoji) {
+  const newUser = {
+    name,
+    emoji: emoji || '👤',
+    createdAt: new Date().toISOString(),
+  };
+  const docRef = await addDoc(collection(db, 'users'), newUser);
+  return { id: docRef.id, ...newUser };
 }
 
-export function createTask({ title, legalIssues, actionPlan, description, createdBy, assignees, priority, deadline }) {
-  const tasks = getTasks();
+export async function removeUser(userId) {
+  await deleteDoc(doc(db, 'users', userId));
+}
+
+// ---------- Tasks (Real-time Firestore) ----------
+
+export function subscribeTasks(onUpdate) {
+  const tasksRef = collection(db, 'tasks');
+
+  return onSnapshot(
+    tasksRef,
+    (snapshot) => {
+      const tasksList = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      // Sort client-side by createdAt descending
+      tasksList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      onUpdate(tasksList);
+    },
+    (error) => {
+      console.error('Error listening to tasks:', error);
+      onUpdate([]);
+    }
+  );
+}
+
+export async function createTask({
+  title,
+  legalIssues,
+  actionPlan,
+  description,
+  createdBy,
+  assignees,
+  priority,
+  deadline,
+}) {
   const newTask = {
-    id: 'task-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
     title,
     legalIssues: legalIssues || '',
     actionPlan: actionPlan || '',
@@ -92,52 +133,45 @@ export function createTask({ title, legalIssues, actionPlan, description, create
     createdAt: new Date().toISOString(),
     updates: [],
   };
-  tasks.unshift(newTask);
-  saveTasks(tasks);
-  return newTask;
+
+  const docRef = await addDoc(collection(db, 'tasks'), newTask);
+  return { id: docRef.id, ...newTask };
 }
 
-export function getTaskById(taskId) {
-  return getTasks().find((t) => t.id === taskId) || null;
-}
-
-export function addTaskUpdate(taskId, userId, message, newStatus) {
-  const tasks = getTasks();
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) return null;
-
-  const update = {
+export async function addTaskUpdate(taskId, userId, message, newStatus) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const updateItem = {
     id: 'upd-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
     userId,
     message,
-    newStatus: newStatus || task.status,
+    newStatus: newStatus || null,
     timestamp: new Date().toISOString(),
   };
 
-  task.updates.push(update);
-  if (newStatus) task.status = newStatus;
-  saveTasks(tasks);
-  return task;
+  const updatePayload = {
+    updates: arrayUnion(updateItem),
+  };
+  if (newStatus) {
+    updatePayload.status = newStatus;
+  }
+
+  await updateDoc(taskRef, updatePayload);
+  return updateItem;
 }
 
-export function deleteTask(taskId) {
-  let tasks = getTasks();
-  tasks = tasks.filter((t) => t.id !== taskId);
-  saveTasks(tasks);
+export async function updateTask(taskId, updates) {
+  const taskRef = doc(db, 'tasks', taskId);
+  await updateDoc(taskRef, updates);
 }
 
-export function updateTask(taskId, updates) {
-  const tasks = getTasks();
-  const idx = tasks.findIndex((t) => t.id === taskId);
-  if (idx === -1) return null;
-  tasks[idx] = { ...tasks[idx], ...updates };
-  saveTasks(tasks);
-  return tasks[idx];
+export async function deleteTask(taskId) {
+  const taskRef = doc(db, 'tasks', taskId);
+  await deleteDoc(taskRef);
 }
 
 // ---------- Stats ----------
 
-export function getTaskStats(tasks) {
+export function getTaskStats(tasks = []) {
   return {
     total: tasks.length,
     pending: tasks.filter((t) => t.status === 'pending').length,
