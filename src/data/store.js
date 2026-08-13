@@ -7,6 +7,7 @@ import {
   deleteDoc,
   onSnapshot,
   arrayUnion,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
@@ -53,12 +54,33 @@ export function subscribeUsers(onUpdate) {
     usersRef,
     async (snapshot) => {
       if (snapshot.empty) {
-        // Seed default users if collection is empty
-        for (const u of DEFAULT_USERS) {
-          await setDoc(doc(db, 'users', u.id), u);
+        // Seed default users atomically if collection is empty
+        try {
+          const batch = writeBatch(db);
+          for (const u of DEFAULT_USERS) {
+            batch.set(doc(db, 'users', u.id), u);
+          }
+          await batch.commit();
+        } catch (err) {
+          console.error('Error seeding default users:', err);
         }
         onUpdate(DEFAULT_USERS);
       } else {
+        const existingIds = new Set(snapshot.docs.map((d) => d.id));
+        // Backfill any missing default users
+        const missingUsers = DEFAULT_USERS.filter((u) => !existingIds.has(u.id));
+        if (missingUsers.length > 0) {
+          try {
+            const batch = writeBatch(db);
+            for (const u of missingUsers) {
+              batch.set(doc(db, 'users', u.id), u);
+            }
+            await batch.commit();
+          } catch (err) {
+            console.error('Error backfilling missing default users:', err);
+          }
+        }
+
         const usersList = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
