@@ -263,9 +263,8 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
                   placeholder="เช่น ส่งเอกสารให้ศาลเรียบร้อยแล้ว..."
                   value={updateMessage}
                   onChange={(e) => setUpdateMessage(e.target.value)}
-                  rows={4}
+                  rows={3}
                   required
-                  autoFocus
                   id="update-msg-input"
                 />
               </div>

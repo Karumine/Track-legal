@@ -566,24 +566,27 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(6px);
-  z-index: 200;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 16px;
   animation: fadeIn 0.2s ease-out;
 }
 
 .modal-content {
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
+  max-width: 460px;
+  max-height: 85vh;
   overflow-y: auto;
-  animation: slideUp 0.3s ease-out;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 .modal-header {
@@ -1736,6 +1739,17 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
