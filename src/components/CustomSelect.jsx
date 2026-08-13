@@ -18,12 +18,19 @@ export default function CustomSelect({
   const toggleDropdown = () => {
     if (!isOpen && dropdownRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      if (placement === 'up' || (placement === 'auto' && spaceBelow < 190)) {
-        setOpenUpward(true);
-      } else {
-        setOpenUpward(false);
+      const modal = dropdownRef.current.closest('.modal-content');
+      let shouldOpenUp = placement === 'up';
+
+      if (placement === 'auto') {
+        if (modal) {
+          const modalRect = modal.getBoundingClientRect();
+          const spaceBelowInModal = modalRect.bottom - rect.bottom;
+          shouldOpenUp = spaceBelowInModal < 180 || (window.innerHeight - rect.bottom) < 220;
+        } else {
+          shouldOpenUp = (window.innerHeight - rect.bottom) < 220;
+        }
       }
+      setOpenUpward(shouldOpenUp);
     }
     setIsOpen((prev) => !prev);
   };

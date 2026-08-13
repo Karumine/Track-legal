@@ -68,6 +68,7 @@ export default function UpdateProgressModal({ task, currentUser, onSave, onClose
               value={newStatus}
               onChange={setNewStatus}
               options={STATUS_OPTIONS}
+              placement="up"
               id="update-status-select"
             />
           </div>

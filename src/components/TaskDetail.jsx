@@ -286,6 +286,7 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
                   value={updateStatus}
                   onChange={setUpdateStatus}
                   options={STATUS_OPTIONS}
+                  placement="up"
                   id="update-status-sel"
                 />
               </div>
