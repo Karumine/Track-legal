@@ -155,12 +155,42 @@ export function exportTasksToPdf(tasks, users, currentUser) {
     </html>
   `;
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.print();
-  };
+  printHtml(html);
+}
+
+function printHtml(html) {
+  // Hidden iframe method - Works reliably on iOS Safari, Android, and Desktop without opening blank tabs
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  iframe.style.opacity = '0';
+  iframe.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // Give browser time to load fonts & parse styles
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (err) {
+      console.error('Error invoking print dialog:', err);
+    }
+    // Clean up iframe after print dialog
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    }, 5000);
+  }, 400);
 }
 
 export function exportSingleTaskToPdf(task, users, currentUser) {
@@ -494,10 +524,5 @@ export function exportSingleTaskToPdf(task, users, currentUser) {
     </html>
   `;
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.print();
-  };
+  printHtml(html);
 }
