@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CustomSelect from './CustomSelect.jsx';
 import EditTaskModal from './EditTaskModal.jsx';
+import { exportSingleTaskToPdf } from '../utils/pdf.js';
 
 const STATUS_MAP = {
   pending: { label: 'รอดำเนินการ', icon: 'fa-clock' },
@@ -74,14 +75,25 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
             <i className="fa-solid fa-chevron-left"></i>
             กลับ
           </button>
-          <button
-            className="btn-edit-task"
-            onClick={() => setShowEditModal(true)}
-            id="top-edit-task-btn"
-          >
-            <i className="fa-solid fa-pen-to-square"></i>
-            แก้ไขข้อมูลงาน
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              className="btn-print-task"
+              onClick={() => exportSingleTaskToPdf(task, users, currentUser)}
+              id="print-single-task-btn"
+              title="พิมพ์สรุปสำนวนคดีนี้ (PDF)"
+            >
+              <i className="fa-solid fa-print"></i>
+              พิมพ์สรุป
+            </button>
+            <button
+              className="btn-edit-task"
+              onClick={() => setShowEditModal(true)}
+              id="top-edit-task-btn"
+            >
+              <i className="fa-solid fa-pen-to-square"></i>
+              แก้ไข
+            </button>
+          </div>
         </div>
 
         <h1 className="detail-title">{task.title}</h1>

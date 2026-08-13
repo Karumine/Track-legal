@@ -162,3 +162,342 @@ export function exportTasksToPdf(tasks, users, currentUser) {
     printWindow.print();
   };
 }
+
+export function exportSingleTaskToPdf(task, users, currentUser) {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getUserName = (id) => {
+    const u = users.find((u) => u.id === id);
+    return u ? `${u.name}` : 'ไม่ทราบ';
+  };
+
+  const now = new Date().toLocaleDateString('th-TH', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const assigneeNames = (task.assignees || []).map((id) => getUserName(id)).join(', ') || 'ไม่ได้ระบุ';
+  const creatorName = getUserName(task.createdBy);
+  const currentUserName = currentUser ? getUserName(currentUser.id) : creatorName;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="th">
+    <head>
+      <meta charset="UTF-8">
+      <title>สรุปสำนวนคดี - ${task.title}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+      <style>
+        @page {
+          size: A4;
+          margin: 18mm 15mm;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Sarabun', -apple-system, sans-serif;
+          color: #0f172a;
+          background: #ffffff;
+          font-size: 13px;
+          line-height: 1.55;
+          padding: 10px;
+        }
+        
+        /* Header */
+        .doc-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-bottom: 2px solid #1e293b;
+          padding-bottom: 14px;
+          margin-bottom: 18px;
+        }
+        .doc-brand {
+          font-size: 11px;
+          font-weight: 700;
+          color: #475569;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        .doc-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.2;
+        }
+        .doc-meta-right {
+          text-align: right;
+          font-size: 11px;
+          color: #64748b;
+        }
+        .doc-tag {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 4px;
+          font-weight: 700;
+          font-size: 11px;
+          margin-top: 4px;
+        }
+        .doc-tag.pending { background: #e0f2fe; color: #0284c7; }
+        .doc-tag.in-progress { background: #fef3c7; color: #b45309; }
+        .doc-tag.completed { background: #dcfce7; color: #15803d; }
+
+        /* Info Table */
+        .info-grid {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 18px;
+          background: #f8fafc;
+          border-radius: 6px;
+          overflow: hidden;
+          border: 1px solid #e2e8f0;
+        }
+        .info-grid td {
+          padding: 8px 12px;
+          font-size: 12.5px;
+          border-bottom: 1px solid #e2e8f0;
+          vertical-align: top;
+        }
+        .info-label {
+          width: 18%;
+          color: #475569;
+          font-weight: 600;
+          background: #f1f5f9;
+        }
+        .info-val {
+          width: 32%;
+          color: #0f172a;
+          font-weight: 500;
+        }
+
+        /* Sections */
+        .section-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          margin-bottom: 14px;
+          overflow: hidden;
+          page-break-inside: avoid;
+        }
+        .section-head {
+          padding: 8px 14px;
+          font-weight: 700;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .section-head.blue {
+          background: #eff6ff;
+          color: #1e40af;
+          border-bottom: 1px solid #bfdbfe;
+        }
+        .section-head.green {
+          background: #f0fdf4;
+          color: #166534;
+          border-bottom: 1px solid #bbf7d0;
+        }
+        .section-head.gray {
+          background: #f8fafc;
+          color: #334155;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .section-body {
+          padding: 12px 14px;
+          font-size: 13px;
+          color: #1e293b;
+          white-space: pre-wrap;
+          line-height: 1.6;
+        }
+
+        /* Timeline Table */
+        .timeline-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 6px;
+          font-size: 12px;
+        }
+        .timeline-table th {
+          background: #f1f5f9;
+          text-align: left;
+          padding: 6px 10px;
+          font-weight: 600;
+          color: #475569;
+          border-bottom: 1px solid #cbd5e1;
+        }
+        .timeline-table td {
+          padding: 8px 10px;
+          border-bottom: 1px solid #f1f5f9;
+          vertical-align: top;
+        }
+
+        /* Signatures */
+        .signature-section {
+          margin-top: 36px;
+          display: flex;
+          justify-content: space-between;
+          page-break-inside: avoid;
+        }
+        .sig-block {
+          width: 44%;
+          text-align: center;
+        }
+        .sig-line {
+          border-bottom: 1px dotted #94a3b8;
+          height: 48px;
+          margin-bottom: 8px;
+        }
+        .sig-name {
+          font-weight: 600;
+          font-size: 12px;
+          color: #1e293b;
+        }
+        .sig-role {
+          font-size: 11px;
+          color: #64748b;
+        }
+
+        /* Footer */
+        .footer-note {
+          margin-top: 24px;
+          padding-top: 10px;
+          border-top: 1px solid #e2e8f0;
+          text-align: center;
+          font-size: 10.5px;
+          color: #94a3b8;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="doc-header">
+        <div>
+          <div class="doc-brand">⚖️ LEGAL TASK TRACKER — สำนวนคดีและข้อกฎหมาย</div>
+          <h1 class="doc-title">${task.title}</h1>
+        </div>
+        <div class="doc-meta-right">
+          <div>วันที่พิมพ์: ${now}</div>
+          <span class="doc-tag ${task.status}">สถานะ: ${STATUS_LABELS[task.status] || task.status}</span>
+        </div>
+      </div>
+
+      <table class="info-grid">
+        <tr>
+          <td class="info-label">ความสำคัญ:</td>
+          <td class="info-val">${PRIORITY_LABELS[task.priority] || task.priority}</td>
+          <td class="info-label">กำหนดส่ง / นัดหมาย:</td>
+          <td class="info-val">${formatDate(task.deadline)}</td>
+        </tr>
+        <tr>
+          <td class="info-label">ผู้สร้างเคส:</td>
+          <td class="info-val">${creatorName}</td>
+          <td class="info-label">ผู้รับผิดชอบงาน:</td>
+          <td class="info-val">${assigneeNames}</td>
+        </tr>
+      </table>
+
+      ${task.legalIssues ? `
+        <div class="section-card">
+          <div class="section-head blue">
+            <span>⚖️ 1. สรุป ประเด็นข้อกฏหมาย / ข้อเท็จจริงที่คุยกัน</span>
+          </div>
+          <div class="section-body">${task.legalIssues}</div>
+        </div>
+      ` : ''}
+
+      ${task.actionPlan ? `
+        <div class="section-card">
+          <div class="section-head green">
+            <span>📋 2. สรุปความเห็น / มติที่ประชุม (Action Plan ที่ต้องทำ)</span>
+          </div>
+          <div class="section-body">${task.actionPlan}</div>
+        </div>
+      ` : ''}
+
+      ${!task.legalIssues && !task.actionPlan && task.description ? `
+        <div class="section-card">
+          <div class="section-head gray">
+            <span>📄 รายละเอียดงาน</span>
+          </div>
+          <div class="section-body">${task.description}</div>
+        </div>
+      ` : ''}
+
+      <div class="section-card">
+        <div class="section-head gray">
+          <span>🕒 ประวัติความคืบหน้าและการดำเนินงาน (${(task.updates || []).length} รายการ)</span>
+        </div>
+        <div class="section-body" style="padding: 0;">
+          ${(task.updates || []).length > 0 ? `
+            <table class="timeline-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">วัน - เวลา</th>
+                  <th style="width: 20%;">ผู้บันทึก</th>
+                  <th style="width: 40%;">รายละเอียดการดำเนินงาน</th>
+                  <th style="width: 15%;">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${task.updates.map((u) => `
+                  <tr>
+                    <td style="color: #64748b;">${formatDateTime(u.timestamp)}</td>
+                    <td><strong>${getUserName(u.userId)}</strong></td>
+                    <td>${u.message}</td>
+                    <td><span class="doc-tag ${u.newStatus || task.status}">${STATUS_LABELS[u.newStatus || task.status]}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : `
+            <div style="padding: 14px; text-align: center; color: #94a3b8; font-size: 12px;">ยังไม่มีการบันทึกประวัติความคืบหน้า</div>
+          `}
+        </div>
+      </div>
+
+      <div class="signature-section">
+        <div class="sig-block">
+          <div class="sig-line"></div>
+          <div class="sig-name">( ${currentUserName} )</div>
+          <div class="sig-role">ผู้จัดทำรายงาน / ผู้รับผิดชอบ</div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-line"></div>
+          <div class="sig-name">( .................................................... )</div>
+          <div class="sig-role">ผู้ตรวจรับ / หัวหน้างาน</div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        เอกสารนี้ออกโดยระบบ Legal Task Tracker — สำหรับใช้เป็นบันทึกข้อความภายในสำนักงาน
+      </div>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.print();
+  };
+}
