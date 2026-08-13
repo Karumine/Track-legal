@@ -113,9 +113,14 @@ export default function App() {
   // ---------- Tasks ----------
   const handleCreateTask = async (taskData) => {
     try {
-      await createTask(taskData);
+      const created = await createTask(taskData);
       setShowCreateModal(false);
-      setView('dashboard');
+      if (created?.id) {
+        setSelectedTaskId(created.id);
+        setView('detail');
+      } else {
+        setView('dashboard');
+      }
       showToast('สร้างงานใหม่สำเร็จแล้ว! 📋');
     } catch (err) {
       console.error('Error in handleCreateTask:', err);
