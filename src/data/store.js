@@ -132,6 +132,13 @@ export function subscribeTasks(onUpdate) {
   );
 }
 
+function withTimeout(promise, ms = 8000, errorMsg = 'การเชื่อมต่อ Database หมดเวลา (กรุณาตรวจแท็บ Rules ใน Firebase Console)') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(errorMsg)), ms)),
+  ]);
+}
+
 export async function createTask({
   title = '',
   legalIssues = '',
@@ -156,7 +163,7 @@ export async function createTask({
     updates: [],
   };
 
-  const docRef = await addDoc(collection(db, 'tasks'), newTask);
+  const docRef = await withTimeout(addDoc(collection(db, 'tasks'), newTask));
   return { id: docRef.id, ...newTask };
 }
 
@@ -179,7 +186,7 @@ export async function addTaskUpdate(taskId, userId, message, newStatus) {
     updatePayload.status = newStatus;
   }
 
-  await updateDoc(taskRef, updatePayload);
+  await withTimeout(updateDoc(taskRef, updatePayload));
   return updateItem;
 }
 
@@ -189,12 +196,12 @@ export async function updateTask(taskId, updates) {
   const cleanUpdates = Object.fromEntries(
     Object.entries(updates).filter(([_, v]) => v !== undefined)
   );
-  await updateDoc(taskRef, cleanUpdates);
+  await withTimeout(updateDoc(taskRef, cleanUpdates));
 }
 
 export async function deleteTask(taskId) {
   const taskRef = doc(db, 'tasks', taskId);
-  await deleteDoc(taskRef);
+  await withTimeout(deleteDoc(taskRef));
 }
 
 // ---------- Stats ----------

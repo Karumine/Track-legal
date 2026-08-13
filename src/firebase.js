@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjEomo7QTtjUCgREQG0A9y5mHXmwtvXEY",
@@ -14,6 +14,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Cloud Firestore and get a reference to the service
-export const db = getFirestore(app);
+// Initialize Cloud Firestore with auto-detect long polling for solid mobile network compatibility
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+});
+
 export default app;
