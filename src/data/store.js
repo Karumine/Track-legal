@@ -76,11 +76,13 @@ export function saveTasks(tasks) {
   localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
 }
 
-export function createTask({ title, description, createdBy, assignees, priority, deadline }) {
+export function createTask({ title, legalIssues, actionPlan, description, createdBy, assignees, priority, deadline }) {
   const tasks = getTasks();
   const newTask = {
     id: 'task-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
     title,
+    legalIssues: legalIssues || '',
+    actionPlan: actionPlan || '',
     description: description || '',
     createdBy,
     assignees: assignees || [],

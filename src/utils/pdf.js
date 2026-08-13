@@ -114,7 +114,19 @@ export function exportTasksToPdf(tasks, users, currentUser) {
           สร้างโดย: ${getUserName(task.createdBy)}
           ${assigneeNames ? `&nbsp;|&nbsp; มอบหมายให้: ${assigneeNames}` : ''}
         </div>
-        ${task.description ? `<p style="color:#475569; margin-bottom:8px;">${task.description}</p>` : ''}
+        ${task.legalIssues ? `
+          <div style="margin: 8px 0 6px 0; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #3b82f6; font-size: 12px;">
+            <strong style="color: #1e293b; display: block; margin-bottom: 2px;">1. สรุป ประเด็นข้อกฏหมาย / ข้อเท็จจริงที่คุยกัน:</strong>
+            <span style="color: #475569; white-space: pre-wrap;">${task.legalIssues}</span>
+          </div>
+        ` : ''}
+        ${task.actionPlan ? `
+          <div style="margin: 6px 0 8px 0; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #10b981; font-size: 12px;">
+            <strong style="color: #1e293b; display: block; margin-bottom: 2px;">2. สรุปความเห็น / มติที่ประชุม (ความเห็นควร / Action Plan ที่ต้องทำ):</strong>
+            <span style="color: #475569; white-space: pre-wrap;">${task.actionPlan}</span>
+          </div>
+        ` : ''}
+        ${!task.legalIssues && !task.actionPlan && task.description ? `<p style="color:#475569; margin-bottom:8px;">${task.description}</p>` : ''}
     `;
 
     if (task.updates.length > 0) {

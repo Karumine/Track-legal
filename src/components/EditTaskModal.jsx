@@ -8,15 +8,13 @@ const PRIORITY_OPTIONS = [
   { value: 'low', label: 'ต่ำ', icon: '🔵' },
 ];
 
-export default function CreateTaskModal({ users, currentUser, onSave, onClose }) {
-  const [title, setTitle] = useState('');
-  const [legalIssues, setLegalIssues] = useState('');
-  const [actionPlan, setActionPlan] = useState('');
-  const [assignees, setAssignees] = useState([]);
-  const [priority, setPriority] = useState('medium');
-  const [deadline, setDeadline] = useState('');
-
-  const otherUsers = users;
+export default function EditTaskModal({ task, users, onSave, onClose }) {
+  const [title, setTitle] = useState(task.title || '');
+  const [legalIssues, setLegalIssues] = useState(task.legalIssues || '');
+  const [actionPlan, setActionPlan] = useState(task.actionPlan || '');
+  const [assignees, setAssignees] = useState(task.assignees || []);
+  const [priority, setPriority] = useState(task.priority || 'medium');
+  const [deadline, setDeadline] = useState(task.deadline || '');
 
   const toggleAssignee = (userId) => {
     setAssignees((prev) =>
@@ -33,19 +31,10 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
       legalIssues: legalIssues.trim(),
       actionPlan: actionPlan.trim(),
       description: [legalIssues.trim(), actionPlan.trim()].filter(Boolean).join('\n\n'),
-      createdBy: currentUser.id,
       assignees,
       priority,
       deadline,
     });
-
-    // Reset
-    setTitle('');
-    setLegalIssues('');
-    setActionPlan('');
-    setAssignees([]);
-    setPriority('medium');
-    setDeadline('');
   };
 
   return (
@@ -53,8 +42,8 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
       <div className="modal-content">
         <div className="modal-header">
           <h3>
-            <i className="fa-solid fa-folder-plus"></i>
-            สร้างงานใหม่
+            <i className="fa-solid fa-pen-to-square"></i>
+            แก้ไขข้อมูลงาน
           </h3>
           <button className="modal-close" onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
@@ -71,7 +60,7 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              id="task-title-input"
+              id="edit-task-title-input"
             />
           </div>
 
@@ -85,7 +74,7 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
               value={legalIssues}
               onChange={(e) => setLegalIssues(e.target.value)}
               rows={2}
-              id="task-legal-issues-input"
+              id="edit-task-legal-issues-input"
             />
           </div>
 
@@ -99,14 +88,14 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
               value={actionPlan}
               onChange={(e) => setActionPlan(e.target.value)}
               rows={2}
-              id="task-action-plan-input"
+              id="edit-task-action-plan-input"
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">มอบหมายให้</label>
             <div className="checkbox-chips">
-              {otherUsers.map((user) => {
+              {users.map((user) => {
                 const isSelected = assignees.includes(user.id);
                 return (
                   <button
@@ -132,7 +121,7 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
                 onChange={setPriority}
                 options={PRIORITY_OPTIONS}
                 placement="up"
-                id="task-priority-select"
+                id="edit-task-priority-select"
               />
             </div>
 
@@ -143,15 +132,30 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
                 onChange={setDeadline}
                 placeholder="เลือกวัน..."
                 placement="up"
-                id="task-deadline-input"
+                id="edit-task-deadline-input"
               />
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" id="save-task-btn">
-            <i className="fa-solid fa-check"></i>
-            สร้างงาน
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              onClick={onClose}
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ flex: 2 }}
+              id="save-edit-task-btn"
+            >
+              <i className="fa-solid fa-check"></i>
+              บันทึกการแก้ไข
+            </button>
+          </div>
         </form>
       </div>
     </div>

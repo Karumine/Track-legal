@@ -16,6 +16,7 @@ import {
   createTask,
   addTaskUpdate,
   deleteTask,
+  updateTask,
 } from './data/store.js';
 import { exportTasksToPdf } from './utils/pdf.js';
 
@@ -109,6 +110,12 @@ export default function App() {
     showToast('อัพเดทความคืบหน้าแล้ว! ✅');
   };
 
+  const handleEditTask = (taskId, updatedData) => {
+    updateTask(taskId, updatedData);
+    refreshData();
+    showToast('แก้ไขข้อมูลงานเรียบร้อย! ✏️');
+  };
+
   const handleDeleteTask = (taskId) => {
     deleteTask(taskId);
     refreshData();
@@ -163,6 +170,7 @@ export default function App() {
             setSelectedTaskId(null);
           }}
           onUpdate={handleUpdateTask}
+          onEdit={handleEditTask}
           onDelete={handleDeleteTask}
         />
       ) : view === 'manage-users' ? (

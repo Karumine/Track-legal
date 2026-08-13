@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import CustomSelect from './CustomSelect.jsx';
+import EditTaskModal from './EditTaskModal.jsx';
 
 const STATUS_MAP = {
   pending: { label: 'รอดำเนินการ', icon: 'fa-clock' },
@@ -6,14 +8,21 @@ const STATUS_MAP = {
   completed: { label: 'เสร็จแล้ว', icon: 'fa-circle-check' },
 };
 
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'รอดำเนินการ', icon: '🔵' },
+  { value: 'in-progress', label: 'กำลังทำ', icon: '🟡' },
+  { value: 'completed', label: 'เสร็จแล้ว', icon: '🟢' },
+];
+
 const PRIORITY_MAP = {
   high: { label: 'สูง', icon: '🔴' },
   medium: { label: 'ปานกลาง', icon: '🟡' },
   low: { label: 'ต่ำ', icon: '🔵' },
 };
 
-export default function TaskDetail({ task, users, currentUser, onBack, onUpdate, onDelete }) {
+export default function TaskDetail({ task, users, currentUser, onBack, onUpdate, onEdit, onDelete }) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [updateStatus, setUpdateStatus] = useState(task.status);
@@ -60,14 +69,46 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
     <div className="detail-view" id="task-detail">
       {/* Header section */}
       <div className="detail-header-section">
-        <button className="detail-back" onClick={onBack}>
-          <i className="fa-solid fa-chevron-left"></i>
-          กลับ
-        </button>
+        <div className="detail-top-nav">
+          <button className="detail-back" onClick={onBack}>
+            <i className="fa-solid fa-chevron-left"></i>
+            กลับ
+          </button>
+          <button
+            className="btn-edit-task"
+            onClick={() => setShowEditModal(true)}
+            id="top-edit-task-btn"
+          >
+            <i className="fa-solid fa-pen-to-square"></i>
+            แก้ไขข้อมูลงาน
+          </button>
+        </div>
 
         <h1 className="detail-title">{task.title}</h1>
 
-        {task.description && <p className="detail-description">{task.description}</p>}
+        {task.legalIssues && (
+          <div className="detail-section-card">
+            <div className="detail-section-label">
+              <i className="fa-solid fa-scale-balanced" style={{ color: 'var(--info)' }}></i>
+              <span>1. สรุป ประเด็นข้อกฏหมาย / ข้อเท็จจริงที่คุยกัน</span>
+            </div>
+            <p className="detail-section-content">{task.legalIssues}</p>
+          </div>
+        )}
+
+        {task.actionPlan && (
+          <div className="detail-section-card">
+            <div className="detail-section-label">
+              <i className="fa-solid fa-list-check" style={{ color: 'var(--success)' }}></i>
+              <span>2. สรุปความเห็น / มติที่ประชุม (ความเห็นควร / Action Plan ที่ต้องทำ)</span>
+            </div>
+            <p className="detail-section-content">{task.actionPlan}</p>
+          </div>
+        )}
+
+        {!task.legalIssues && !task.actionPlan && task.description && (
+          <p className="detail-description">{task.description}</p>
+        )}
 
         <div className="detail-meta">
           <span className={`status-badge ${task.status}`}>
@@ -162,19 +203,44 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
             onClick={() => setShowUpdateModal(true)}
             id="open-update-btn"
           >
-            <i className="fa-solid fa-pen-to-square"></i>
+            <i className="fa-solid fa-comment-medical"></i>
             อัพเดทความคืบหน้า
           </button>
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={() => setShowDeleteConfirm(true)}
-            id="delete-task-btn"
-          >
-            <i className="fa-regular fa-trash-can"></i>
-            ลบงานนี้
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              onClick={() => setShowEditModal(true)}
+              id="bottom-edit-task-btn"
+            >
+              <i className="fa-solid fa-pen-to-square"></i>
+              แก้ไขข้อมูลงาน
+            </button>
+            <button
+              className="btn btn-danger btn-sm"
+              style={{ flex: 1 }}
+              onClick={() => setShowDeleteConfirm(true)}
+              id="delete-task-btn"
+            >
+              <i className="fa-regular fa-trash-can"></i>
+              ลบงานนี้
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Edit Task Modal */}
+      {showEditModal && (
+        <EditTaskModal
+          task={task}
+          users={users}
+          onSave={(updatedData) => {
+            onEdit(task.id, updatedData);
+            setShowEditModal(false);
+          }}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
 
       {/* Update Modal */}
       {showUpdateModal && (
@@ -205,16 +271,12 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
               </div>
               <div className="form-group">
                 <label className="form-label">เปลี่ยนสถานะ</label>
-                <select
-                  className="form-select"
+                <CustomSelect
                   value={updateStatus}
-                  onChange={(e) => setUpdateStatus(e.target.value)}
+                  onChange={setUpdateStatus}
+                  options={STATUS_OPTIONS}
                   id="update-status-sel"
-                >
-                  <option value="pending">🔵 รอดำเนินการ</option>
-                  <option value="in-progress">🟡 กำลังทำ</option>
-                  <option value="completed">🟢 เสร็จแล้ว</option>
-                </select>
+                />
               </div>
               <button type="submit" className="btn btn-primary" id="submit-update-btn">
                 <i className="fa-solid fa-paper-plane"></i>

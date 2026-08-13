@@ -1,4 +1,11 @@
 import React, { useState } from 'react';
+import CustomSelect from './CustomSelect.jsx';
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'รอดำเนินการ', icon: '🔵' },
+  { value: 'in-progress', label: 'กำลังทำ', icon: '🟡' },
+  { value: 'completed', label: 'เสร็จแล้ว', icon: '🟢' },
+];
 
 export default function UpdateProgressModal({ task, currentUser, onSave, onClose }) {
   const [message, setMessage] = useState('');
@@ -57,16 +64,12 @@ export default function UpdateProgressModal({ task, currentUser, onSave, onClose
 
           <div className="form-group">
             <label className="form-label">เปลี่ยนสถานะเป็น</label>
-            <select
-              className="form-select"
+            <CustomSelect
               value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
+              onChange={setNewStatus}
+              options={STATUS_OPTIONS}
               id="update-status-select"
-            >
-              <option value="pending">🔵 รอดำเนินการ</option>
-              <option value="in-progress">🟡 กำลังทำ</option>
-              <option value="completed">🟢 เสร็จแล้ว</option>
-            </select>
+            />
           </div>
 
           <button type="submit" className="btn btn-primary" id="save-update-btn">
