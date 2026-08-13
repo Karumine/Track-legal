@@ -133,22 +133,22 @@ export function subscribeTasks(onUpdate) {
 }
 
 export async function createTask({
-  title,
-  legalIssues,
-  actionPlan,
-  description,
-  createdBy,
-  assignees,
-  priority,
-  deadline,
+  title = '',
+  legalIssues = '',
+  actionPlan = '',
+  description = '',
+  createdBy = 'kay',
+  assignees = [],
+  priority = 'medium',
+  deadline = '',
 }) {
   const newTask = {
-    title,
-    legalIssues: legalIssues || '',
-    actionPlan: actionPlan || '',
-    description: description || '',
-    createdBy,
-    assignees: assignees || [],
+    title: String(title || '').trim(),
+    legalIssues: String(legalIssues || '').trim(),
+    actionPlan: String(actionPlan || '').trim(),
+    description: String(description || '').trim(),
+    createdBy: createdBy || 'kay',
+    assignees: Array.isArray(assignees) ? assignees : [],
     priority: priority || 'medium',
     status: 'pending',
     deadline: deadline || '',
@@ -164,11 +164,13 @@ export async function addTaskUpdate(taskId, userId, message, newStatus) {
   const taskRef = doc(db, 'tasks', taskId);
   const updateItem = {
     id: 'upd-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-    userId,
-    message,
-    newStatus: newStatus || null,
+    userId: userId || 'kay',
+    message: String(message || '').trim(),
     timestamp: new Date().toISOString(),
   };
+  if (newStatus) {
+    updateItem.newStatus = newStatus;
+  }
 
   const updatePayload = {
     updates: arrayUnion(updateItem),
@@ -183,7 +185,11 @@ export async function addTaskUpdate(taskId, userId, message, newStatus) {
 
 export async function updateTask(taskId, updates) {
   const taskRef = doc(db, 'tasks', taskId);
-  await updateDoc(taskRef, updates);
+  // Remove any undefined keys to prevent Firestore errors
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([_, v]) => v !== undefined)
+  );
+  await updateDoc(taskRef, cleanUpdates);
 }
 
 export async function deleteTask(taskId) {

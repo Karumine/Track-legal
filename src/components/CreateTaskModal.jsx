@@ -15,6 +15,7 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
   const [assignees, setAssignees] = useState([]);
   const [priority, setPriority] = useState('medium');
   const [deadline, setDeadline] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const otherUsers = users;
 
@@ -24,28 +25,35 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
-    onSave({
-      title: title.trim(),
-      legalIssues: legalIssues.trim(),
-      actionPlan: actionPlan.trim(),
-      description: [legalIssues.trim(), actionPlan.trim()].filter(Boolean).join('\n\n'),
-      createdBy: currentUser.id,
-      assignees,
-      priority,
-      deadline,
-    });
+    try {
+      setIsSubmitting(true);
+      await onSave({
+        title: title.trim(),
+        legalIssues: legalIssues.trim(),
+        actionPlan: actionPlan.trim(),
+        description: [legalIssues.trim(), actionPlan.trim()].filter(Boolean).join('\n\n'),
+        createdBy: currentUser?.id || users[0]?.id || 'kay',
+        assignees,
+        priority,
+        deadline,
+      });
 
-    // Reset
-    setTitle('');
-    setLegalIssues('');
-    setActionPlan('');
-    setAssignees([]);
-    setPriority('medium');
-    setDeadline('');
+      // Reset
+      setTitle('');
+      setLegalIssues('');
+      setActionPlan('');
+      setAssignees([]);
+      setPriority('medium');
+      setDeadline('');
+    } catch (err) {
+      console.error('Error in form submit:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,9 +156,23 @@ export default function CreateTaskModal({ users, currentUser, onSave, onClose })
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" id="save-task-btn">
-            <i className="fa-solid fa-check"></i>
-            สร้างงาน
+          <button
+            type="submit"
+            className="btn btn-primary"
+            id="save-task-btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <i className="fa-solid fa-spinner fa-spin"></i>
+                กำลังสร้างงาน...
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-check"></i>
+                สร้างงาน
+              </>
+            )}
           </button>
         </form>
       </div>

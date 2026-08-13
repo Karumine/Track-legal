@@ -115,10 +115,11 @@ export default function App() {
     try {
       await createTask(taskData);
       setShowCreateModal(false);
-      showToast('สร้างงานใหม่แล้ว! 📋');
+      setView('dashboard');
+      showToast('สร้างงานใหม่สำเร็จแล้ว! 📋');
     } catch (err) {
-      console.error(err);
-      showToast('เกิดข้อผิดพลาดในการสร้างงาน', 'error');
+      console.error('Error in handleCreateTask:', err);
+      showToast('เกิดข้อผิดพลาดในการสร้างงาน: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
     }
   };
 
@@ -132,8 +133,8 @@ export default function App() {
       await addTaskUpdate(taskId, userId, message, newStatus);
       showToast('อัพเดทความคืบหน้าแล้ว! ✅');
     } catch (err) {
-      console.error(err);
-      showToast('เกิดข้อผิดพลาดในการอัพเดท', 'error');
+      console.error('Error in handleUpdateTask:', err);
+      showToast('เกิดข้อผิดพลาดในการอัพเดท: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
     }
   };
 
@@ -142,8 +143,8 @@ export default function App() {
       await updateTask(taskId, updatedData);
       showToast('แก้ไขข้อมูลงานเรียบร้อย! ✏️');
     } catch (err) {
-      console.error(err);
-      showToast('เกิดข้อผิดพลาดในการแก้ไขงาน', 'error');
+      console.error('Error in handleEditTask:', err);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขงาน: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
     }
   };
 
@@ -154,8 +155,8 @@ export default function App() {
       setSelectedTaskId(null);
       showToast('ลบงานแล้ว');
     } catch (err) {
-      console.error(err);
-      showToast('เกิดข้อผิดพลาดในการลบงาน', 'error');
+      console.error('Error in handleDeleteTask:', err);
+      showToast('เกิดข้อผิดพลาดในการลบงาน: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
     }
   };
 
