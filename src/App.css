@@ -2119,49 +2119,85 @@ body {
   gap: 12px;
 }
 
-.subtask-status-btn {
+/* --- Sub-task item status indicator (Display Only) --- */
+.subtask-status-indicator {
+  position: relative;
   width: 28px;
   height: 28px;
   min-width: 28px;
   border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  background: transparent;
+  border: 1.5px solid transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+  cursor: default;
   transition: var(--transition);
-  font-size: 14px;
-  color: var(--text-muted);
+  padding: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.subtask-status-btn.pending {
-  border-color: var(--info);
+.subtask-status-indicator i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* 1. Pending State (รอดำเนินการ - Clean Clock Icon with Soft Blue Circle) */
+.subtask-status-indicator.pending {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08);
   color: var(--info);
 }
 
-.subtask-status-btn.pending:hover {
-  background: var(--info-soft);
+.subtask-status-indicator.pending .subtask-icon-pending {
+  font-size: 13px;
+  opacity: 0.9;
+  transform: translateY(0.5px); /* Optical vertical centering compensation */
 }
 
-.subtask-status-btn.in-progress {
+/* 2. In-Progress State (กำลังทำ - Smooth Spin & Amber Pulse Glow) */
+.subtask-status-indicator.in-progress {
   border-color: var(--warning);
   color: var(--warning);
-  background: var(--warning-soft);
+  background: rgba(245, 158, 11, 0.14);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+  animation: pulseProgressGlow 2.5s infinite ease-in-out;
 }
 
-.subtask-status-btn.in-progress:hover {
-  background: rgba(245, 158, 11, 0.2);
+.subtask-icon-progress {
+  font-size: 13px;
+  --fa-animation-duration: 2.2s; /* Calm, professional spinning speed */
 }
 
-.subtask-status-btn.completed {
+@keyframes pulseProgressGlow {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+  }
+}
+
+/* 3. Completed State (เสร็จแล้ว - Emerald Badge with Checkmark) */
+.subtask-status-indicator.completed {
   border-color: var(--success);
-  color: var(--success);
-  background: var(--success-soft);
+  color: #ffffff;
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
 }
 
-.subtask-status-btn.completed:hover {
-  background: rgba(16, 185, 129, 0.2);
+.subtask-icon-completed {
+  font-size: 12.5px;
+  font-weight: 900;
 }
 
 .subtask-item-info {

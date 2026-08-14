@@ -202,23 +202,22 @@ export default function SubTaskSection({
           return (
             <div key={sub.id} className={`subtask-item ${sub.status}`}>
               <div className="subtask-item-header">
-                {/* Checkbox status circle button */}
-                <button
-                  type="button"
-                  className={`subtask-status-btn ${sub.status}`}
-                  onClick={() => {
-                    const nextStatus = sub.status === 'pending' ? 'in-progress'
-                      : sub.status === 'in-progress' ? 'completed' : 'pending';
-                    onUpdateSubTask(task.id, sub.id, { status: nextStatus });
-                  }}
-                  title={`สถานะ: ${subStatus.label} (คลิกเพื่อเปลี่ยน)`}
+                {/* Status indicator (display only) */}
+                <div
+                  className={`subtask-status-indicator ${sub.status}`}
+                  title={`สถานะ: ${subStatus.label}`}
+                  aria-label={`สถานะ: ${subStatus.label}`}
                 >
-                  <i className={`fa-solid ${
-                    sub.status === 'completed' ? 'fa-circle-check'
-                      : sub.status === 'in-progress' ? 'fa-circle-half-stroke'
-                        : 'fa-circle'
-                  }`}></i>
-                </button>
+                  {sub.status === 'completed' && (
+                    <i className="fa-solid fa-check subtask-icon-completed"></i>
+                  )}
+                  {sub.status === 'in-progress' && (
+                    <i className="fa-solid fa-arrows-rotate fa-spin subtask-icon-progress"></i>
+                  )}
+                  {sub.status === 'pending' && (
+                    <i className="fa-regular fa-clock subtask-icon-pending"></i>
+                  )}
+                </div>
 
                 {/* Sub-task title & metadata */}
                 <div className="subtask-item-info">
