@@ -73,6 +73,24 @@ export default function App() {
     };
   }, []);
 
+  // Ensure focused inputs in modals/forms scroll into view above virtual keyboards on mobile
+  useEffect(() => {
+    const handleFocusIn = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        setTimeout(() => {
+          try {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } catch (err) {
+            // fallback
+          }
+        }, 280);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocusIn);
+    return () => window.removeEventListener('focusin', handleFocusIn);
+  }, []);
+
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
   }, []);

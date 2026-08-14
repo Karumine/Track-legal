@@ -572,14 +572,21 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -589,10 +596,14 @@ body {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 460px;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto 0;
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
 }
 
 .modal-header {
@@ -605,6 +616,7 @@ body {
   top: 0;
   background: var(--bg-secondary);
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -641,6 +653,11 @@ body {
 
 .modal-body {
   padding: 14px 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---------- Form Elements ---------- */
@@ -666,9 +683,11 @@ body {
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-th);
-  font-size: 13.5px;
+  font-size: 14px;
   transition: var(--transition);
   outline: none;
+  scroll-margin-top: 60px;
+  scroll-margin-bottom: 90px;
 }
 
 .form-input:focus,
@@ -2399,6 +2418,34 @@ body {
   color: var(--accent);
 }
 
+
+/* ---------- Mobile Responsive & Keyboard Handling ---------- */
+@media (max-width: 767px) {
+  .modal-overlay {
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    justify-content: flex-start;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 24px);
+    border-radius: var(--radius-lg);
+    margin: auto 0;
+  }
+
+  .modal-body {
+    padding: 14px 16px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  /* Prevent iOS Safari from auto-zooming into inputs (requires >= 16px font size on mobile) */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px;
+  }
+}
 
 @media (min-width: 768px) {
   .app-container {
