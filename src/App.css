@@ -2360,6 +2360,139 @@ body {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+/* --- Locked Completed Subtask Tag for Non-leaders --- */
+.subtask-locked-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-full);
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.subtask-locked-tag i {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* --- Leader Actions for Completed Subtask --- */
+.subtask-item-actions.leader-actions .subtask-icon-btn.leader-edit {
+  color: var(--accent);
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.subtask-item-actions.leader-actions .subtask-icon-btn.leader-edit:hover {
+  background: var(--accent);
+  color: var(--text-dark);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* --- Modal Header Badge --- */
+.modal-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.modal-header-badge.leader {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--accent);
+}
+
+/* --- Status Picker in Sub-task Edit Modal --- */
+.subtask-status-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.subtask-status-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 8px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-th);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  outline: none;
+}
+
+.subtask-status-btn:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.subtask-status-btn.selected {
+  font-weight: 700;
+}
+
+.subtask-status-btn.pending.selected {
+  background: var(--info-soft);
+  border-color: var(--info);
+  color: var(--info);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.subtask-status-btn.in-progress.selected {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.subtask-status-btn.completed.selected {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.subtask-status-btn .status-check-icon {
+  font-size: 10px;
+}
+
+/* --- Locked Status Notice in Update Modal --- */
+.subtask-locked-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.subtask-locked-status-banner i {
+  font-size: 18px;
+  color: var(--success);
+  flex-shrink: 0;
+}
+
 /* --- Timeline Subtask Badge --- */
 .timeline-subtask-tag {
   display: inline-flex;
@@ -2372,10 +2505,27 @@ body {
   color: var(--accent);
   font-size: 11.5px;
   font-weight: 600;
-  margin-bottom: 6px;
 }
 
 .timeline-subtask-tag i {
+  font-size: 10px;
+}
+
+/* --- Timeline Audit Tag --- */
+.timeline-subtask-audit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--info);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.timeline-subtask-audit-tag i {
   font-size: 10px;
 }
 

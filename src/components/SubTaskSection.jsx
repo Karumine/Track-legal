@@ -28,6 +28,11 @@ export default function SubTaskSection({
   const [editTitle, setEditTitle] = useState('');
   const [editAssignees, setEditAssignees] = useState([]);
   const [editDeadline, setEditDeadline] = useState('');
+  const [editStatus, setEditStatus] = useState('pending');
+  const [originalStatus, setOriginalStatus] = useState('pending');
+  const [editNote, setEditNote] = useState('');
+
+  const isLeader = currentUser?.id === 'kay' || currentUser?.name?.includes('กาย');
 
   // Delete confirm
   const [deletingSubId, setDeletingSubId] = useState(null);
@@ -47,6 +52,16 @@ export default function SubTaskSection({
 
   const toggleAssignee = (userId, setter, current) => {
     setter(current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]);
+  };
+
+  const handleOpenEdit = (sub) => {
+    setEditingSubTaskId(sub.id);
+    setEditTitle(sub.title);
+    setEditAssignees(sub.assignees || []);
+    setEditDeadline(sub.deadline || '');
+    setEditStatus(sub.status || 'pending');
+    setOriginalStatus(sub.status || 'pending');
+    setEditNote('');
   };
 
   const handleAddSubTask = async (e) => {
@@ -77,6 +92,8 @@ export default function SubTaskSection({
       title: editTitle.trim(),
       assignees: editAssignees,
       deadline: editDeadline,
+      status: editStatus,
+      editNote: editNote.trim() || undefined,
     });
     setEditingSubTaskId(null);
   };
@@ -246,8 +263,8 @@ export default function SubTaskSection({
                   </div>
                 </div>
 
-                {/* Action buttons (Only visible when subtask is not yet completed) */}
-                {sub.status !== 'completed' && (
+                {/* Action buttons (Visible for active tasks, or completed tasks ONLY when currentUser is Leader - พี่กาย) */}
+                {sub.status !== 'completed' ? (
                   <div className="subtask-item-actions">
                     <button
                       type="button"
@@ -260,12 +277,7 @@ export default function SubTaskSection({
                     <button
                       type="button"
                       className="subtask-icon-btn"
-                      onClick={() => {
-                        setEditingSubTaskId(sub.id);
-                        setEditTitle(sub.title);
-                        setEditAssignees(sub.assignees || []);
-                        setEditDeadline(sub.deadline || '');
-                      }}
+                      onClick={() => handleOpenEdit(sub)}
                       title="แก้ไขข้อมูลงานย่อย"
                     >
                       <i className="fa-solid fa-pen"></i>
@@ -278,6 +290,38 @@ export default function SubTaskSection({
                     >
                       <i className="fa-regular fa-trash-can"></i>
                     </button>
+                  </div>
+                ) : isLeader ? (
+                  <div className="subtask-item-actions leader-actions">
+                    <button
+                      type="button"
+                      className="subtask-icon-btn update"
+                      onClick={() => onOpenUpdateModal && onOpenUpdateModal(sub.id)}
+                      title="อัพเดทสถานะ/ความคืบหน้า (สิทธิ์หัวหน้า - พี่กาย)"
+                    >
+                      <i className="fa-solid fa-comment-dots"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="subtask-icon-btn leader-edit"
+                      onClick={() => handleOpenEdit(sub)}
+                      title="แก้ไขข้อมูล/สถานะงานย่อยที่เสร็จแล้ว (สิทธิ์หัวหน้า - พี่กาย)"
+                    >
+                      <i className="fa-solid fa-pen"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="subtask-icon-btn danger"
+                      onClick={() => setDeletingSubId(sub.id)}
+                      title="ลบงานย่อยนี้"
+                    >
+                      <i className="fa-regular fa-trash-can"></i>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="subtask-locked-tag" title="งานย่อยนี้เสร็จสิ้นแล้ว (แก้ไขได้เฉพาะหัวหน้า - พี่กาย เพื่อป้องกันความสับสน)">
+                    <i className="fa-solid fa-lock"></i>
+                    <span>เสร็จสิ้น</span>
                   </div>
                 )}
               </div>
@@ -294,6 +338,11 @@ export default function SubTaskSection({
               <h3>
                 <i className="fa-solid fa-pen-to-square"></i>
                 แก้ไขงานย่อย
+                {originalStatus === 'completed' && (
+                  <span className="modal-header-badge leader">
+                    <i className="fa-solid fa-user-shield"></i> สิทธิ์หัวหน้า
+                  </span>
+                )}
               </h3>
               <button className="modal-close" onClick={() => setEditingSubTaskId(null)}>
                 <i className="fa-solid fa-xmark"></i>
@@ -312,6 +361,57 @@ export default function SubTaskSection({
                   id="edit-subtask-title-input"
                 />
               </div>
+
+              {/* Status selector */}
+              <div className="form-group">
+                <label className="form-label">
+                  <i className="fa-solid fa-flag" style={{ color: 'var(--accent)' }}></i> สถานะงานย่อย
+                </label>
+                <div className="subtask-status-picker">
+                  {[
+                    { value: 'pending', label: 'รอดำเนินการ', icon: 'fa-regular fa-clock', color: 'pending' },
+                    { value: 'in-progress', label: 'กำลังทำ', icon: 'fa-solid fa-arrows-rotate', color: 'in-progress' },
+                    { value: 'completed', label: 'เสร็จแล้ว', icon: 'fa-solid fa-check', color: 'completed' },
+                  ].map((st) => {
+                    const isSel = editStatus === st.value;
+                    return (
+                      <button
+                        type="button"
+                        key={st.value}
+                        className={`subtask-status-btn ${st.color} ${isSel ? 'selected' : ''}`}
+                        onClick={() => setEditStatus(st.value)}
+                      >
+                        <i className={st.icon}></i>
+                        <span>{st.label}</span>
+                        {isSel && <i className="fa-solid fa-check status-check-icon"></i>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Note input if status is changed */}
+              {editStatus !== originalStatus && (
+                <div className="form-group" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                  <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>หมายเหตุการเปลี่ยนสถานะ</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 'normal' }}>(ไม่บังคับระบุ)</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="เช่น กดยกเลิกเสร็จเนื่องจากรอเอกสารแนบเพิ่มเติม..."
+                    value={editNote}
+                    onChange={(e) => setEditNote(e.target.value)}
+                    id="edit-subtask-note-input"
+                  />
+                  <span className="form-hint" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <i className="fa-solid fa-shield-halved" style={{ color: 'var(--accent)' }}></i>
+                    ระบบจะบันทึกประวัติการเปลี่ยนสถานะนี้ลงในไทม์ไลน์ความคืบหน้าให้อัตโนมัติ
+                  </span>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">มอบหมายให้</label>
                 <div className="checkbox-chips compact">

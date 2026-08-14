@@ -303,16 +303,28 @@ export async function addSubTask(taskId, { title, assignees = [], deadline = '',
   return newSubTask;
 }
 
-export async function updateSubTask(taskId, subTaskId, updates) {
+const STATUS_LABELS = {
+  pending: 'รอดำเนินการ',
+  'in-progress': 'กำลังทำ',
+  completed: 'เสร็จแล้ว',
+};
+
+export async function updateSubTask(taskId, subTaskId, updates, userId = 'kay') {
   const taskRef = doc(db, 'tasks', taskId);
   const taskSnap = await withTimeout(getDoc(taskRef));
   if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
 
   const taskData = taskSnap.data();
   const currentSubTasks = taskData.subTasks || [];
+  const targetSub = currentSubTasks.find((s) => s.id === subTaskId);
+
+  // Extract editNote if passed
+  const { editNote, ...rawUpdates } = updates;
   const cleanUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([_, v]) => v !== undefined)
+    Object.entries(rawUpdates).filter(([_, v]) => v !== undefined)
   );
+
+  const isStatusChanged = cleanUpdates.status && targetSub && cleanUpdates.status !== targetSub.status;
   const updatedSubTasks = currentSubTasks.map((s) =>
     s.id === subTaskId ? { ...s, ...cleanUpdates } : s
   );
@@ -320,6 +332,28 @@ export async function updateSubTask(taskId, subTaskId, updates) {
 
   const updatePayload = { subTasks: updatedSubTasks };
   if (newCaseStatus) updatePayload.status = newCaseStatus;
+
+  // If status changed or editNote was provided, log an update in timeline for transparency
+  if (isStatusChanged || editNote) {
+    const oldStatusLabel = STATUS_LABELS[targetSub?.status] || targetSub?.status || 'รอดำเนินการ';
+    const newStatusLabel = STATUS_LABELS[cleanUpdates.status] || cleanUpdates.status || 'รอดำเนินการ';
+
+    let defaultMsg = `ปรับสถานะงานย่อย "${cleanUpdates.title || targetSub?.title || ''}" เป็น "${newStatusLabel}"`;
+    if (isStatusChanged) {
+      defaultMsg = `ปรับสถานะงานย่อย "${cleanUpdates.title || targetSub?.title || ''}" จาก "${oldStatusLabel}" เป็น "${newStatusLabel}"`;
+    }
+
+    const updateItem = {
+      id: 'upd-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      userId: userId || 'kay',
+      message: editNote ? editNote.trim() : defaultMsg,
+      newStatus: cleanUpdates.status || targetSub?.status,
+      subTaskId: subTaskId,
+      timestamp: new Date().toISOString(),
+      isSubTaskEditLog: true,
+    };
+    updatePayload.updates = arrayUnion(updateItem);
+  }
 
   await withTimeout(updateDoc(taskRef, updatePayload));
 }

@@ -212,7 +212,8 @@ export default function App() {
 
   const handleUpdateSubTask = async (taskId, subTaskId, updates) => {
     try {
-      await updateSubTask(taskId, subTaskId, updates);
+      await updateSubTask(taskId, subTaskId, updates, currentUser?.id);
+      showToast('บันทึกการแก้ไขงานย่อยแล้ว! ✏️');
     } catch (err) {
       console.error('Error in handleUpdateSubTask:', err);
       showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');

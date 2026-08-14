@@ -53,6 +53,10 @@ export default function TaskDetail({
   const subTasks = task.subTasks || [];
   const directSubTask = directSubTaskId ? subTasks.find((s) => s.id === directSubTaskId) : null;
   const directSubTaskIndex = directSubTask ? subTasks.findIndex((s) => s.id === directSubTask.id) : -1;
+  const isLeader = currentUser?.id === 'kay' || currentUser?.name?.includes('กาย');
+
+  const selectedSubTask = updateSubTaskId ? subTasks.find((s) => s.id === updateSubTaskId) : null;
+  const isTargetSubTaskCompleted = (directSubTask || selectedSubTask)?.status === 'completed';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -247,7 +251,7 @@ export default function TaskDetail({
               const linkedSubTask = update.subTaskId && subTasks.find((s) => s.id === update.subTaskId);
               const canEdit =
                 currentUser &&
-                (currentUser.id === update.userId || currentUser.id === 'kay' || currentUser.id === task.createdBy);
+                (currentUser.id === update.userId || isLeader || currentUser.id === task.createdBy);
               return (
                 <div key={update.id} className="timeline-item">
                   <div className={`timeline-dot ${updateStatus || ''}`}></div>
@@ -285,12 +289,20 @@ export default function TaskDetail({
                       </div>
                     </div>
 
-                    {linkedSubTask && (
-                      <div className="timeline-subtask-tag">
-                        <i className="fa-solid fa-list-check"></i>
-                        <span>งานย่อย: {linkedSubTask.title}</span>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                      {linkedSubTask && (
+                        <div className="timeline-subtask-tag">
+                          <i className="fa-solid fa-list-check"></i>
+                          <span>งานย่อย: {linkedSubTask.title}</span>
+                        </div>
+                      )}
+                      {update.isSubTaskEditLog && (
+                        <div className="timeline-subtask-audit-tag">
+                          <i className="fa-solid fa-shield-halved"></i>
+                          <span>บันทึกการปรับสถานะ</span>
+                        </div>
+                      )}
+                    </div>
 
                     <p className="timeline-message">{update.message}</p>
                     {update.newStatus && (
@@ -437,18 +449,34 @@ export default function TaskDetail({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  เปลี่ยนสถานะ {updateSubTaskId ? '(ของงานย่อยนี้)' : '(ของภาพรวมเคส)'}
-                </label>
-                <CustomSelect
-                  value={updateStatus}
-                  onChange={setUpdateStatus}
-                  options={STATUS_OPTIONS}
-                  placement="up"
-                  id="update-status-sel"
-                />
-              </div>
+              {/* Status Selector or Locked Notice */}
+              {isTargetSubTaskCompleted && !isLeader ? (
+                <div className="form-group">
+                  <label className="form-label">สถานะงานย่อย</label>
+                  <div className="subtask-locked-status-banner">
+                    <i className="fa-solid fa-shield-halved"></i>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>เสร็จสิ้นแล้ว (สถานะถูกล็อค)</div>
+                      <div style={{ fontSize: 11.5, opacity: 0.85 }}>
+                        การปรับเปลี่ยนสถานะงานย่อยที่เสร็จแล้ว สามารถทำได้โดยหัวหน้า (พี่กาย) เท่านั้น
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">
+                    เปลี่ยนสถานะ {updateSubTaskId ? '(ของงานย่อยนี้)' : '(ของภาพรวมเคส)'}
+                  </label>
+                  <CustomSelect
+                    value={updateStatus}
+                    onChange={setUpdateStatus}
+                    options={STATUS_OPTIONS}
+                    placement="up"
+                    id="update-status-sel"
+                  />
+                </div>
+              )}
 
               <button type="submit" className="btn btn-primary" id="submit-update-btn">
                 <i className="fa-solid fa-paper-plane"></i>
