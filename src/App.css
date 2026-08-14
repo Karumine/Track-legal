@@ -1526,12 +1526,25 @@ body {
   height: 14px;
   border-radius: 50%;
   border: 3px solid var(--bg-secondary);
-  background: var(--accent);
+  background: var(--text-muted);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
   z-index: 1;
+  transition: var(--transition);
 }
 
-.timeline-item.status-change .timeline-dot {
+.timeline-dot.pending {
+  background: var(--info);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.45);
+}
+
+.timeline-dot.in-progress {
+  background: var(--warning);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+}
+
+.timeline-dot.completed {
   background: var(--success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.45);
 }
 
 .timeline-card {
@@ -1593,6 +1606,7 @@ body {
   background: rgba(17, 24, 39, 0.95);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
+  z-index: 30;
 }
 
 /* ---------- Manage Users ---------- */

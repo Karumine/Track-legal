@@ -173,10 +173,10 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
           <div className="timeline">
             {[...task.updates].reverse().map((update) => {
               const updateUser = users.find((u) => u.id === update.userId);
-              const statusChanged = update.newStatus !== task.status;
+              const updateStatus = update.newStatus;
               return (
-                <div key={update.id} className={`timeline-item ${statusChanged ? 'status-change' : ''}`}>
-                  <div className="timeline-dot"></div>
+                <div key={update.id} className="timeline-item">
+                  <div className={`timeline-dot ${updateStatus || ''}`}></div>
                   <div className="timeline-card">
                     <div className="timeline-card-header">
                       <span className="timeline-user">
