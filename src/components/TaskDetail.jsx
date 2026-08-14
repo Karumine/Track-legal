@@ -41,6 +41,7 @@ export default function TaskDetail({
   const [updateMessage, setUpdateMessage] = useState('');
   const [updateStatus, setUpdateStatus] = useState(task.status);
   const [updateSubTaskId, setUpdateSubTaskId] = useState('');
+  const [directSubTaskId, setDirectSubTaskId] = useState('');
   const [editingUpdate, setEditingUpdate] = useState(null);
   const [editMessageInput, setEditMessageInput] = useState('');
   const [viewingHistory, setViewingHistory] = useState(null);
@@ -50,6 +51,8 @@ export default function TaskDetail({
   const status = STATUS_MAP[task.status] || STATUS_MAP.pending;
   const priority = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
   const subTasks = task.subTasks || [];
+  const directSubTask = directSubTaskId ? subTasks.find((s) => s.id === directSubTaskId) : null;
+  const directSubTaskIndex = directSubTask ? subTasks.findIndex((s) => s.id === directSubTask.id) : -1;
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -75,6 +78,7 @@ export default function TaskDetail({
 
   const handleOpenUpdateModal = (subId = '') => {
     setUpdateSubTaskId(subId);
+    setDirectSubTaskId(subId);
     if (subId) {
       const sub = subTasks.find((s) => s.id === subId);
       setUpdateStatus(sub?.status || 'pending');
@@ -92,6 +96,7 @@ export default function TaskDetail({
     setUpdateMessage('');
     setUpdateStatus(task.status);
     setUpdateSubTaskId('');
+    setDirectSubTaskId('');
     setShowUpdateModal(false);
   };
 
@@ -133,9 +138,19 @@ export default function TaskDetail({
               className="btn-edit-task"
               onClick={() => setShowEditModal(true)}
               id="top-edit-task-btn"
+              title="แก้ไขข้อมูลงาน"
             >
               <i className="fa-solid fa-pen-to-square"></i>
               แก้ไข
+            </button>
+            <button
+              className="btn-delete-task"
+              onClick={() => setShowDeleteConfirm(true)}
+              id="top-delete-task-btn"
+              title="ลบงานนี้"
+            >
+              <i className="fa-regular fa-trash-can"></i>
+              ลบ
             </button>
           </div>
         </div>
@@ -301,36 +316,14 @@ export default function TaskDetail({
 
       {/* Action Buttons — Always Visible */}
       <div className="update-bar">
-        <div className="btn-group" style={{ flexDirection: 'column', gap: 8 }}>
-          <button
-            className="btn btn-primary"
-            onClick={() => handleOpenUpdateModal('')}
-            id="open-update-btn"
-          >
-            <i className="fa-solid fa-comment-medical"></i>
-            อัพเดทความคืบหน้า
-          </button>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              className="btn btn-secondary"
-              style={{ flex: 1 }}
-              onClick={() => setShowEditModal(true)}
-              id="bottom-edit-task-btn"
-            >
-              <i className="fa-solid fa-pen-to-square"></i>
-              แก้ไขข้อมูลงาน
-            </button>
-            <button
-              className="btn btn-danger btn-sm"
-              style={{ flex: 1 }}
-              onClick={() => setShowDeleteConfirm(true)}
-              id="delete-task-btn"
-            >
-              <i className="fa-regular fa-trash-can"></i>
-              ลบงานนี้
-            </button>
-          </div>
-        </div>
+        <button
+          className="btn btn-primary"
+          onClick={() => handleOpenUpdateModal('')}
+          id="open-update-btn"
+        >
+          <i className="fa-solid fa-comment-medical"></i>
+          อัพเดทความคืบหน้า
+        </button>
       </div>
 
       {/* Edit Task Modal */}
@@ -348,45 +341,86 @@ export default function TaskDetail({
 
       {/* Update Modal */}
       {showUpdateModal && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowUpdateModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowUpdateModal(false);
+              setDirectSubTaskId('');
+            }
+          }}
+        >
           <div className="modal-content">
             <div className="modal-header">
               <h3>
                 <i className="fa-solid fa-pen-to-square"></i>
-                อัพเดทความคืบหน้า
+                {directSubTask
+                  ? `อัพเดทงานย่อย: ${directSubTask.title}`
+                  : 'อัพเดทความคืบหน้า'}
               </h3>
-              <button className="modal-close" onClick={() => setShowUpdateModal(false)}>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowUpdateModal(false);
+                  setDirectSubTaskId('');
+                }}
+              >
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
             <form onSubmit={handleSubmitUpdate} className="modal-body">
-              {/* If subtasks exist, allow choosing target */}
-              {subTasks.length > 0 && (
+              {/* If opened directly for a specific subtask, display a dedicated info badge */}
+              {directSubTask ? (
                 <div className="form-group">
-                  <label className="form-label">อัพเดทเกี่ยวกับ</label>
-                  <CustomSelect
-                    value={updateSubTaskId}
-                    onChange={(val) => {
-                      setUpdateSubTaskId(val);
-                      if (val) {
-                        const sub = subTasks.find((s) => s.id === val);
-                        if (sub) setUpdateStatus(sub.status);
-                      } else {
-                        setUpdateStatus(task.status);
-                      }
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: 'var(--radius-sm, 8px)',
+                      border: '1px solid var(--border)',
                     }}
-                    options={[
-                      { value: '', label: '📁 ภาพรวมของเคส', icon: '📁' },
-                      ...subTasks.map((s, idx) => ({
-                        value: s.id,
-                        label: `${idx + 1}. ${s.title}`,
-                        icon: '📋',
-                      })),
-                    ]}
-                    placement="down"
-                    id="update-target-sel"
-                  />
+                  >
+                    <span style={{ fontSize: 18 }}>📋</span>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>งานย่อยที่กำลังอัพเดท</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {directSubTaskIndex + 1}. {directSubTask.title}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                /* If subtasks exist and not in direct subtask mode, allow choosing target */
+                subTasks.length > 0 && (
+                  <div className="form-group">
+                    <label className="form-label">อัพเดทเกี่ยวกับ</label>
+                    <CustomSelect
+                      value={updateSubTaskId}
+                      onChange={(val) => {
+                        setUpdateSubTaskId(val);
+                        if (val) {
+                          const sub = subTasks.find((s) => s.id === val);
+                          if (sub) setUpdateStatus(sub.status);
+                        } else {
+                          setUpdateStatus(task.status);
+                        }
+                      }}
+                      options={[
+                        { value: '', label: '📁 ภาพรวมของเคส', icon: '📁' },
+                        ...subTasks.map((s, idx) => ({
+                          value: s.id,
+                          label: `${idx + 1}. ${s.title}${s.status === 'completed' ? ' (เสร็จแล้ว)' : ''}`,
+                          icon: s.status === 'completed' ? '✅' : '📋',
+                        })),
+                      ]}
+                      placement="down"
+                      id="update-target-sel"
+                    />
+                  </div>
+                )
               )}
 
               <div className="form-group">
@@ -405,7 +439,7 @@ export default function TaskDetail({
 
               <div className="form-group">
                 <label className="form-label">
-                  เปลี่ยนสถานะ {updateSubTaskId ? '(ของงานย่อยนี้)' : '(ของเคส)'}
+                  เปลี่ยนสถานะ {updateSubTaskId ? '(ของงานย่อยนี้)' : '(ของภาพรวมเคส)'}
                 </label>
                 <CustomSelect
                   value={updateStatus}

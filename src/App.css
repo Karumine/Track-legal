@@ -1377,7 +1377,8 @@ body {
 }
 
 .btn-edit-task,
-.btn-print-task {
+.btn-print-task,
+.btn-delete-task {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1401,8 +1402,15 @@ body {
   border-color: var(--accent);
 }
 
+.btn-delete-task:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 .btn-edit-task:active,
-.btn-print-task:active {
+.btn-print-task:active,
+.btn-delete-task:active {
   transform: scale(0.95);
 }
 
@@ -2279,6 +2287,16 @@ body {
   color: var(--text-primary);
   background: var(--bg-glass-hover);
   border-color: var(--border-strong);
+}
+
+.subtask-icon-btn.update {
+  color: var(--accent);
+}
+
+.subtask-icon-btn.update:hover {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .subtask-icon-btn.danger:hover {

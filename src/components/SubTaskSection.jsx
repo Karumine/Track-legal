@@ -247,39 +247,40 @@ export default function SubTaskSection({
                   </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="subtask-item-actions">
-                  <button
-                    type="button"
-                    className="subtask-quick-action-btn update"
-                    onClick={() => onOpenUpdateModal && onOpenUpdateModal(sub.id)}
-                    title="อัพเดทความคืบหน้างาย่อยนี้"
-                  >
-                    <i className="fa-solid fa-comment-dots"></i>
-                    <span>อัพเดท</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="subtask-icon-btn"
-                    onClick={() => {
-                      setEditingSubTaskId(sub.id);
-                      setEditTitle(sub.title);
-                      setEditAssignees(sub.assignees || []);
-                      setEditDeadline(sub.deadline || '');
-                    }}
-                    title="แก้ไขข้อมูลงานย่อย"
-                  >
-                    <i className="fa-solid fa-pen"></i>
-                  </button>
-                  <button
-                    type="button"
-                    className="subtask-icon-btn danger"
-                    onClick={() => setDeletingSubId(sub.id)}
-                    title="ลบงานย่อยนี้"
-                  >
-                    <i className="fa-regular fa-trash-can"></i>
-                  </button>
-                </div>
+                {/* Action buttons (Only visible when subtask is not yet completed) */}
+                {sub.status !== 'completed' && (
+                  <div className="subtask-item-actions">
+                    <button
+                      type="button"
+                      className="subtask-icon-btn update"
+                      onClick={() => onOpenUpdateModal && onOpenUpdateModal(sub.id)}
+                      title="อัพเดทความคืบหน้างาย่อยนี้"
+                    >
+                      <i className="fa-solid fa-comment-dots"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="subtask-icon-btn"
+                      onClick={() => {
+                        setEditingSubTaskId(sub.id);
+                        setEditTitle(sub.title);
+                        setEditAssignees(sub.assignees || []);
+                        setEditDeadline(sub.deadline || '');
+                      }}
+                      title="แก้ไขข้อมูลงานย่อย"
+                    >
+                      <i className="fa-solid fa-pen"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="subtask-icon-btn danger"
+                      onClick={() => setDeletingSubId(sub.id)}
+                      title="ลบงานย่อยนี้"
+                    >
+                      <i className="fa-regular fa-trash-can"></i>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
