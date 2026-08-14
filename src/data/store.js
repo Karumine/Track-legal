@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   addDoc,
   updateDoc,
@@ -188,6 +189,39 @@ export async function addTaskUpdate(taskId, userId, message, newStatus) {
 
   await withTimeout(updateDoc(taskRef, updatePayload));
   return updateItem;
+}
+
+export async function editTaskUpdateMessage(taskId, updateId, newMessage, userId) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) {
+    throw new Error('ไม่พบข้อมูลงาน');
+  }
+  const taskData = taskSnap.data();
+  const currentUpdates = taskData.updates || [];
+
+  const updatedUpdates = currentUpdates.map((u) => {
+    if (u.id === updateId) {
+      const existingHistory = Array.isArray(u.editHistory) ? u.editHistory : [];
+      const historyEntry = {
+        previousMessage: u.message,
+        editedAt: new Date().toISOString(),
+        editedBy: userId || 'unknown',
+      };
+      return {
+        ...u,
+        message: String(newMessage || '').trim(),
+        isEdited: true,
+        lastEditedAt: new Date().toISOString(),
+        lastEditedBy: userId || 'unknown',
+        editHistory: [...existingHistory, historyEntry],
+      };
+    }
+    return u;
+  });
+
+  await withTimeout(updateDoc(taskRef, { updates: updatedUpdates }));
+  return updatedUpdates;
 }
 
 export async function updateTask(taskId, updates) {

@@ -135,7 +135,7 @@ export function exportTasksToPdf(tasks, users, currentUser) {
         html += `
           <div class="update-item">
             <span class="update-user">${getUserName(upd.userId)}</span>
-            <span class="update-time"> — ${formatDateTime(upd.timestamp)}</span>
+            <span class="update-time"> — ${formatDateTime(upd.timestamp)}${upd.isEdited ? ' (แก้ไขแล้ว)' : ''}</span>
             <br/>${upd.message}
             ${upd.newStatus ? ` <span class="badge ${upd.newStatus}" style="margin-left:4px;">${STATUS_LABELS[upd.newStatus]}</span>` : ''}
           </div>
@@ -492,7 +492,7 @@ export function exportSingleTaskToPdf(task, users, currentUser) {
                   <tr>
                     <td style="color: #64748b;">${formatDateTime(u.timestamp)}</td>
                     <td><strong>${getUserName(u.userId)}</strong></td>
-                    <td>${u.message}</td>
+                    <td>${u.message}${u.isEdited ? ' <span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(แก้ไขแล้ว)</span>' : ''}</td>
                     <td><span class="doc-tag ${u.newStatus || task.status}">${STATUS_LABELS[u.newStatus || task.status]}</span></td>
                   </tr>
                 `).join('')}

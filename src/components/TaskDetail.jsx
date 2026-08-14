@@ -21,12 +21,24 @@ const PRIORITY_MAP = {
   low: { label: 'ต่ำ', icon: '🔵' },
 };
 
-export default function TaskDetail({ task, users, currentUser, onBack, onUpdate, onEdit, onDelete }) {
+export default function TaskDetail({
+  task,
+  users,
+  currentUser,
+  onBack,
+  onUpdate,
+  onEditUpdateMessage,
+  onEdit,
+  onDelete,
+}) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [updateStatus, setUpdateStatus] = useState(task.status);
+  const [editingUpdate, setEditingUpdate] = useState(null);
+  const [editMessageInput, setEditMessageInput] = useState('');
+  const [viewingHistory, setViewingHistory] = useState(null);
 
   const creatorUser = users.find((u) => u.id === task.createdBy);
   const assigneeUsers = users.filter((u) => task.assignees.includes(u.id));
@@ -62,6 +74,19 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
     setUpdateMessage('');
     setUpdateStatus(task.status);
     setShowUpdateModal(false);
+  };
+
+  const handleSaveEditMessage = async (e) => {
+    e.preventDefault();
+    if (!editMessageInput.trim() || !editingUpdate) return;
+    if (editMessageInput.trim() === (editingUpdate.message || '').trim()) {
+      setEditingUpdate(null);
+      return;
+    }
+    if (onEditUpdateMessage) {
+      await onEditUpdateMessage(task.id, editingUpdate.id, editMessageInput.trim());
+    }
+    setEditingUpdate(null);
   };
 
   const isOverdue = task.deadline && task.status !== 'completed' && new Date(task.deadline) < new Date();
@@ -174,6 +199,9 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
             {[...task.updates].reverse().map((update) => {
               const updateUser = users.find((u) => u.id === update.userId);
               const updateStatus = update.newStatus;
+              const canEdit =
+                currentUser &&
+                (currentUser.id === update.userId || currentUser.id === 'kay' || currentUser.id === task.createdBy);
               return (
                 <div key={update.id} className="timeline-item">
                   <div className={`timeline-dot ${updateStatus || ''}`}></div>
@@ -183,7 +211,32 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
                         {updateUser ? updateUser.emoji : '👤'}{' '}
                         {updateUser ? updateUser.name : 'ไม่ทราบ'}
                       </span>
-                      <span className="timeline-time">{formatDateTime(update.timestamp)}</span>
+                      <div className="timeline-meta-right">
+                        <span className="timeline-time">{formatDateTime(update.timestamp)}</span>
+                        {update.isEdited && (
+                          <button
+                            type="button"
+                            className="timeline-edited-tag"
+                            onClick={() => setViewingHistory(update)}
+                            title="คลิกเพื่อดูประวัติการแก้ไขข้อความ (Audit Log)"
+                          >
+                            <i className="fa-solid fa-clock-rotate-left"></i> (แก้ไขแล้ว)
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="timeline-edit-btn"
+                            onClick={() => {
+                              setEditingUpdate(update);
+                              setEditMessageInput(update.message);
+                            }}
+                            title="แก้ไขข้อความที่พิมพ์ผิด"
+                          >
+                            <i className="fa-solid fa-pen"></i>
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="timeline-message">{update.message}</p>
                     {update.newStatus && (
@@ -323,6 +376,117 @@ export default function TaskDetail({ task, users, currentUser, onBack, onUpdate,
                   ลบ
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Update Message Modal */}
+      {editingUpdate && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingUpdate(null)}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>
+                <i className="fa-solid fa-pen-to-square"></i>
+                แก้ไขข้อความที่พิมพ์ผิด
+              </h3>
+              <button className="modal-close" onClick={() => setEditingUpdate(null)}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditMessage} className="modal-body">
+              <div className="form-group">
+                <label className="form-label">ข้อความ *</label>
+                <textarea
+                  className="form-textarea"
+                  value={editMessageInput}
+                  onChange={(e) => setEditMessageInput(e.target.value)}
+                  rows={3}
+                  required
+                  autoFocus
+                  placeholder="แก้ไขข้อความ..."
+                  id="edit-update-msg-input"
+                />
+                <span className="form-hint" style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <i className="fa-solid fa-shield-halved" style={{ color: 'var(--info)' }}></i>
+                  แก้ไขได้เฉพาะข้อความ (ระบบจะบันทึกประวัติคำเดิมไว้เพื่อความโปร่งใส)
+                </span>
+              </div>
+              <div className="btn-group" style={{ marginTop: 16 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingUpdate(null)}>
+                  ยกเลิก
+                </button>
+                <button type="submit" className="btn btn-primary" id="save-edit-msg-btn">
+                  <i className="fa-solid fa-check"></i>
+                  บันทึกการแก้ไข
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Revision History (Audit Log) Modal */}
+      {viewingHistory && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setViewingHistory(null)}>
+          <div className="modal-content modal-history">
+            <div className="modal-header">
+              <h3>
+                <i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--accent)' }}></i>
+                ประวัติการแก้ไขข้อความ
+              </h3>
+              <button className="modal-close" onClick={() => setViewingHistory(null)}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div className="modal-body history-modal-body">
+              <div className="history-section-desc">
+                <i className="fa-solid fa-shield-halved" style={{ color: 'var(--success)' }}></i>
+                <span>บันทึกความโปร่งใส (Audit Log): แสดงประวัติคำเดิมและเวลาที่มีการแก้ไข</span>
+              </div>
+
+              {/* Current Version */}
+              <div className="history-card current">
+                <div className="history-card-header">
+                  <span className="history-badge current">
+                    <i className="fa-solid fa-circle-check"></i> ข้อความปัจจุบัน
+                  </span>
+                  <span className="history-time">
+                    {formatDateTime(viewingHistory.lastEditedAt || viewingHistory.timestamp)}
+                    {viewingHistory.lastEditedBy &&
+                      ` โดย ${users.find((u) => u.id === viewingHistory.lastEditedBy)?.name || viewingHistory.lastEditedBy}`}
+                  </span>
+                </div>
+                <div className="history-text">{viewingHistory.message}</div>
+              </div>
+
+              {/* Previous Versions */}
+              {viewingHistory.editHistory && viewingHistory.editHistory.length > 0 ? (
+                <div className="history-list">
+                  <div className="history-list-title">
+                    <i className="fa-solid fa-clock-rotate-left"></i> ประวัติก่อนหน้า ({viewingHistory.editHistory.length} รายการ):
+                  </div>
+                  {[...viewingHistory.editHistory].reverse().map((entry, idx) => {
+                    const editor = users.find((u) => u.id === entry.editedBy);
+                    return (
+                      <div key={idx} className="history-card past">
+                        <div className="history-card-header">
+                          <span className="history-badge past">
+                            เวอร์ชันเดิม #{viewingHistory.editHistory.length - idx}
+                          </span>
+                          <span className="history-time">
+                            {formatDateTime(entry.editedAt)} {editor ? `โดย ${editor.name}` : ''}
+                          </span>
+                        </div>
+                        <div className="history-text past-text">{entry.previousMessage}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: 12 }}>
+                  ยังไม่มีประวัติการแก้ไขก่อนหน้า
+                </p>
+              )}
             </div>
           </div>
         </div>

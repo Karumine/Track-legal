@@ -16,6 +16,7 @@ import {
   removeUser,
   createTask,
   addTaskUpdate,
+  editTaskUpdateMessage,
   deleteTask,
   updateTask,
 } from './data/store.js';
@@ -153,6 +154,16 @@ export default function App() {
     }
   };
 
+  const handleEditUpdateMessage = async (taskId, updateId, newMessage) => {
+    try {
+      await editTaskUpdateMessage(taskId, updateId, newMessage, currentUser.id);
+      showToast('แก้ไขข้อความเรียบร้อย! ✏️');
+    } catch (err) {
+      console.error('Error in handleEditUpdateMessage:', err);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขข้อความ: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
+    }
+  };
+
   const handleDeleteTask = async (taskId) => {
     try {
       await deleteTask(taskId);
@@ -211,6 +222,7 @@ export default function App() {
             setSelectedTaskId(null);
           }}
           onUpdate={handleUpdateTask}
+          onEditUpdateMessage={handleEditUpdateMessage}
           onEdit={handleEditTask}
           onDelete={handleDeleteTask}
         />
