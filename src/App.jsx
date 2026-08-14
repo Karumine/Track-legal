@@ -19,6 +19,11 @@ import {
   editTaskUpdateMessage,
   deleteTask,
   updateTask,
+  addSubTask,
+  updateSubTask,
+  deleteSubTask,
+  addSubTaskUpdate,
+  editSubTaskUpdateMessage,
 } from './data/store.js';
 import { exportTasksToPdf } from './utils/pdf.js';
 
@@ -134,9 +139,9 @@ export default function App() {
     setView('detail');
   };
 
-  const handleUpdateTask = async (taskId, userId, message, newStatus) => {
+  const handleUpdateTask = async (taskId, userId, message, newStatus, subTaskId) => {
     try {
-      await addTaskUpdate(taskId, userId, message, newStatus);
+      await addTaskUpdate(taskId, userId, message, newStatus, subTaskId);
       showToast('อัพเดทความคืบหน้าแล้ว! ✅');
     } catch (err) {
       console.error('Error in handleUpdateTask:', err);
@@ -173,6 +178,56 @@ export default function App() {
     } catch (err) {
       console.error('Error in handleDeleteTask:', err);
       showToast('เกิดข้อผิดพลาดในการลบงาน: ' + (err.code || err.message || 'ตรวจ Security Rules'), 'error');
+    }
+  };
+
+  // ---------- Sub-tasks ----------
+  const handleAddSubTask = async (taskId, subTaskData) => {
+    try {
+      await addSubTask(taskId, subTaskData);
+      showToast('เพิ่มงานย่อยแล้ว! 📌');
+    } catch (err) {
+      console.error('Error in handleAddSubTask:', err);
+      showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');
+    }
+  };
+
+  const handleUpdateSubTask = async (taskId, subTaskId, updates) => {
+    try {
+      await updateSubTask(taskId, subTaskId, updates);
+    } catch (err) {
+      console.error('Error in handleUpdateSubTask:', err);
+      showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');
+    }
+  };
+
+  const handleDeleteSubTask = async (taskId, subTaskId) => {
+    try {
+      await deleteSubTask(taskId, subTaskId);
+      showToast('ลบงานย่อยแล้ว');
+    } catch (err) {
+      console.error('Error in handleDeleteSubTask:', err);
+      showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');
+    }
+  };
+
+  const handleAddSubTaskUpdate = async (taskId, subTaskId, userId, message, newStatus) => {
+    try {
+      await addSubTaskUpdate(taskId, subTaskId, userId, message, newStatus);
+      showToast('อัพเดทงานย่อยแล้ว! ✅');
+    } catch (err) {
+      console.error('Error in handleAddSubTaskUpdate:', err);
+      showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');
+    }
+  };
+
+  const handleEditSubTaskUpdateMessage = async (taskId, subTaskId, updateId, newMessage) => {
+    try {
+      await editSubTaskUpdateMessage(taskId, subTaskId, updateId, newMessage, currentUser.id);
+      showToast('แก้ไขข้อความเรียบร้อย! ✏️');
+    } catch (err) {
+      console.error('Error in handleEditSubTaskUpdateMessage:', err);
+      showToast('เกิดข้อผิดพลาด: ' + (err.code || err.message), 'error');
     }
   };
 
@@ -225,6 +280,11 @@ export default function App() {
           onEditUpdateMessage={handleEditUpdateMessage}
           onEdit={handleEditTask}
           onDelete={handleDeleteTask}
+          onAddSubTask={handleAddSubTask}
+          onUpdateSubTask={handleUpdateSubTask}
+          onDeleteSubTask={handleDeleteSubTask}
+          onAddSubTaskUpdate={handleAddSubTaskUpdate}
+          onEditSubTaskUpdateMessage={handleEditSubTaskUpdateMessage}
         />
       ) : view === 'manage-users' ? (
         <ManageUsers

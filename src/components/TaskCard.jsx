@@ -74,6 +74,24 @@ export default function TaskCard({ task, users, onClick }) {
           ))}
         </div>
       )}
+
+      {/* Sub-task progress */}
+      {task.subTasks && task.subTasks.length > 0 && (() => {
+        const total = task.subTasks.length;
+        const done = task.subTasks.filter((s) => s.status === 'completed').length;
+        const pct = Math.round((done / total) * 100);
+        return (
+          <div className="task-card-subtask-progress">
+            <div className="task-card-subtask-bar">
+              <div className="task-card-subtask-fill" style={{ width: `${pct}%` }}></div>
+            </div>
+            <span className="task-card-subtask-text">
+              <i className="fa-solid fa-list-check"></i>
+              {done}/{total} งาน
+            </span>
+          </div>
+        );
+      })()}
     </div>
   );
 }

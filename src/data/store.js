@@ -162,14 +162,21 @@ export async function createTask({
     deadline: deadline || '',
     createdAt: new Date().toISOString(),
     updates: [],
+    subTasks: [],
   };
 
   const docRef = await withTimeout(addDoc(collection(db, 'tasks'), newTask));
   return { id: docRef.id, ...newTask };
 }
 
-export async function addTaskUpdate(taskId, userId, message, newStatus) {
+export async function addTaskUpdate(taskId, userId, message, newStatus, subTaskId) {
   const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) {
+    throw new Error('ไม่พบข้อมูลงาน');
+  }
+  const taskData = taskSnap.data();
+
   const updateItem = {
     id: 'upd-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
     userId: userId || 'kay',
@@ -179,12 +186,30 @@ export async function addTaskUpdate(taskId, userId, message, newStatus) {
   if (newStatus) {
     updateItem.newStatus = newStatus;
   }
+  if (subTaskId) {
+    updateItem.subTaskId = subTaskId;
+  }
+
+  let currentSubTasks = taskData.subTasks || [];
+  if (subTaskId && newStatus) {
+    currentSubTasks = currentSubTasks.map((s) => {
+      if (s.id === subTaskId) {
+        return { ...s, status: newStatus };
+      }
+      return s;
+    });
+  }
+
+  const newCaseStatus = currentSubTasks.length > 0
+    ? computeCaseStatus(currentSubTasks)
+    : (newStatus || taskData.status || 'pending');
 
   const updatePayload = {
     updates: arrayUnion(updateItem),
+    subTasks: currentSubTasks,
   };
-  if (newStatus) {
-    updatePayload.status = newStatus;
+  if (newCaseStatus) {
+    updatePayload.status = newCaseStatus;
   }
 
   await withTimeout(updateDoc(taskRef, updatePayload));
@@ -236,6 +261,152 @@ export async function updateTask(taskId, updates) {
 export async function deleteTask(taskId) {
   const taskRef = doc(db, 'tasks', taskId);
   await withTimeout(deleteDoc(taskRef));
+}
+
+// ---------- Sub-tasks ----------
+
+/** Compute case-level status from sub-tasks */
+export function computeCaseStatus(subTasks) {
+  if (!subTasks || subTasks.length === 0) return null; // no sub-tasks → use task's own status
+  const allCompleted = subTasks.every((s) => s.status === 'completed');
+  if (allCompleted) return 'completed';
+  const anyInProgress = subTasks.some((s) => s.status === 'in-progress' || s.status === 'completed');
+  if (anyInProgress) return 'in-progress';
+  return 'pending';
+}
+
+export async function addSubTask(taskId, { title, assignees = [], deadline = '', createdBy = 'kay' }) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
+
+  const newSubTask = {
+    id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+    title: String(title || '').trim(),
+    assignees: Array.isArray(assignees) ? assignees : [],
+    status: 'pending',
+    deadline: deadline || '',
+    createdAt: new Date().toISOString(),
+    createdBy: createdBy || 'kay',
+    updates: [],
+  };
+
+  const taskData = taskSnap.data();
+  const currentSubTasks = taskData.subTasks || [];
+  const updatedSubTasks = [...currentSubTasks, newSubTask];
+  const newCaseStatus = computeCaseStatus(updatedSubTasks);
+
+  const updatePayload = { subTasks: updatedSubTasks };
+  if (newCaseStatus) updatePayload.status = newCaseStatus;
+
+  await withTimeout(updateDoc(taskRef, updatePayload));
+  return newSubTask;
+}
+
+export async function updateSubTask(taskId, subTaskId, updates) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
+
+  const taskData = taskSnap.data();
+  const currentSubTasks = taskData.subTasks || [];
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([_, v]) => v !== undefined)
+  );
+  const updatedSubTasks = currentSubTasks.map((s) =>
+    s.id === subTaskId ? { ...s, ...cleanUpdates } : s
+  );
+  const newCaseStatus = computeCaseStatus(updatedSubTasks);
+
+  const updatePayload = { subTasks: updatedSubTasks };
+  if (newCaseStatus) updatePayload.status = newCaseStatus;
+
+  await withTimeout(updateDoc(taskRef, updatePayload));
+}
+
+export async function deleteSubTask(taskId, subTaskId) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
+
+  const taskData = taskSnap.data();
+  const currentSubTasks = taskData.subTasks || [];
+  const updatedSubTasks = currentSubTasks.filter((s) => s.id !== subTaskId);
+  const newCaseStatus = computeCaseStatus(updatedSubTasks);
+
+  const updatePayload = { subTasks: updatedSubTasks };
+  if (newCaseStatus) updatePayload.status = newCaseStatus;
+  else if (updatedSubTasks.length === 0) updatePayload.status = taskData.status || 'pending';
+
+  await withTimeout(updateDoc(taskRef, updatePayload));
+}
+
+export async function addSubTaskUpdate(taskId, subTaskId, userId, message, newStatus) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
+
+  const updateItem = {
+    id: 'upd-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+    userId: userId || 'kay',
+    message: String(message || '').trim(),
+    timestamp: new Date().toISOString(),
+  };
+  if (newStatus) updateItem.newStatus = newStatus;
+
+  const taskData = taskSnap.data();
+  const currentSubTasks = taskData.subTasks || [];
+  const updatedSubTasks = currentSubTasks.map((s) => {
+    if (s.id === subTaskId) {
+      const subUpdates = [...(s.updates || []), updateItem];
+      const updatedSub = { ...s, updates: subUpdates };
+      if (newStatus) updatedSub.status = newStatus;
+      return updatedSub;
+    }
+    return s;
+  });
+
+  const newCaseStatus = computeCaseStatus(updatedSubTasks);
+  const updatePayload = { subTasks: updatedSubTasks };
+  if (newCaseStatus) updatePayload.status = newCaseStatus;
+
+  await withTimeout(updateDoc(taskRef, updatePayload));
+  return updateItem;
+}
+
+export async function editSubTaskUpdateMessage(taskId, subTaskId, updateId, newMessage, userId) {
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnap = await withTimeout(getDoc(taskRef));
+  if (!taskSnap.exists()) throw new Error('ไม่พบข้อมูลเคส');
+
+  const taskData = taskSnap.data();
+  const currentSubTasks = taskData.subTasks || [];
+  const updatedSubTasks = currentSubTasks.map((s) => {
+    if (s.id === subTaskId) {
+      const updatedUpdates = (s.updates || []).map((u) => {
+        if (u.id === updateId) {
+          const existingHistory = Array.isArray(u.editHistory) ? u.editHistory : [];
+          return {
+            ...u,
+            message: String(newMessage || '').trim(),
+            isEdited: true,
+            lastEditedAt: new Date().toISOString(),
+            lastEditedBy: userId || 'unknown',
+            editHistory: [...existingHistory, {
+              previousMessage: u.message,
+              editedAt: new Date().toISOString(),
+              editedBy: userId || 'unknown',
+            }],
+          };
+        }
+        return u;
+      });
+      return { ...s, updates: updatedUpdates };
+    }
+    return s;
+  });
+
+  await withTimeout(updateDoc(taskRef, { subTasks: updatedSubTasks }));
 }
 
 // ---------- Stats ----------

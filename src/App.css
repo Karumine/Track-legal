@@ -1947,7 +1947,405 @@ body {
   to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
 }
 
-/* ---------- Responsive (tablet+) ---------- */
+/* ==========================================
+   Sub-tasks Section
+   ========================================== */
+
+/* --- Section container --- */
+.subtask-section {
+  margin: 18px 20px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.custom-datepicker-container.open,
+.custom-select-container.open {
+  z-index: 300;
+  position: relative;
+}
+
+.subtask-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+}
+
+.subtask-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subtask-header-left i {
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.subtask-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-th);
+}
+
+.subtask-add-btn:hover {
+  background: var(--accent);
+  color: var(--text-dark);
+}
+
+/* --- Progress bar --- */
+.subtask-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.subtask-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.subtask-progress-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: var(--radius-full);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+.subtask-progress-text {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* --- Add form --- */
+.subtask-add-form {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.subtask-add-form .form-group {
+  margin-bottom: 12px;
+}
+
+.subtask-add-form .checkbox-chips.compact .checkbox-chip {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+/* --- Sub-task list --- */
+.subtask-list {
+  padding: 0;
+}
+
+.subtask-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 18px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.subtask-empty i {
+  font-size: 28px;
+  margin-bottom: 4px;
+  opacity: 0.5;
+}
+
+.subtask-empty p {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* --- Sub-task item --- */
+.subtask-item {
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.subtask-item:last-child {
+  border-bottom: none;
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+}
+
+.subtask-item:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.subtask-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  gap: 12px;
+}
+
+.subtask-status-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.subtask-status-btn.pending {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.subtask-status-btn.pending:hover {
+  background: var(--info-soft);
+}
+
+.subtask-status-btn.in-progress {
+  border-color: var(--warning);
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.subtask-status-btn.in-progress:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.subtask-status-btn.completed {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.subtask-status-btn.completed:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.subtask-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.subtask-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.subtask-item-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.subtask-item-title.done {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.subtask-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.subtask-assignee-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.subtask-deadline-mini {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.subtask-deadline-mini.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.subtask-status-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.subtask-status-tag.pending {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.subtask-status-tag.in-progress {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.subtask-status-tag.completed {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.subtask-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.subtask-quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-th);
+}
+
+.subtask-quick-action-btn:hover {
+  background: var(--accent);
+  color: var(--text-dark);
+}
+
+.subtask-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  transition: var(--transition);
+}
+
+.subtask-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass-hover);
+  border-color: var(--border-strong);
+}
+
+.subtask-icon-btn.danger:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* --- Timeline Subtask Badge --- */
+.timeline-subtask-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.timeline-subtask-tag i {
+  font-size: 10px;
+}
+
+/* --- TaskCard sub-task progress --- */
+.task-card-subtask-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.task-card-subtask-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.task-card-subtask-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.task-card-subtask-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-card-subtask-text i {
+  font-size: 10px;
+  color: var(--accent);
+}
+
+
 @media (min-width: 768px) {
   .app-container {
     max-width: 520px;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CustomSelect from './CustomSelect.jsx';
 import EditTaskModal from './EditTaskModal.jsx';
+import SubTaskSection from './SubTaskSection.jsx';
 import { exportSingleTaskToPdf } from '../utils/pdf.js';
 
 const STATUS_MAP = {
@@ -30,20 +31,25 @@ export default function TaskDetail({
   onEditUpdateMessage,
   onEdit,
   onDelete,
+  onAddSubTask,
+  onUpdateSubTask,
+  onDeleteSubTask,
 }) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [updateStatus, setUpdateStatus] = useState(task.status);
+  const [updateSubTaskId, setUpdateSubTaskId] = useState('');
   const [editingUpdate, setEditingUpdate] = useState(null);
   const [editMessageInput, setEditMessageInput] = useState('');
   const [viewingHistory, setViewingHistory] = useState(null);
 
   const creatorUser = users.find((u) => u.id === task.createdBy);
-  const assigneeUsers = users.filter((u) => task.assignees.includes(u.id));
+  const assigneeUsers = users.filter((u) => (task.assignees || []).includes(u.id));
   const status = STATUS_MAP[task.status] || STATUS_MAP.pending;
   const priority = PRIORITY_MAP[task.priority] || PRIORITY_MAP.medium;
+  const subTasks = task.subTasks || [];
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -67,12 +73,25 @@ export default function TaskDetail({
     });
   };
 
+  const handleOpenUpdateModal = (subId = '') => {
+    setUpdateSubTaskId(subId);
+    if (subId) {
+      const sub = subTasks.find((s) => s.id === subId);
+      setUpdateStatus(sub?.status || 'pending');
+    } else {
+      setUpdateStatus(task.status);
+    }
+    setUpdateMessage('');
+    setShowUpdateModal(true);
+  };
+
   const handleSubmitUpdate = (e) => {
     e.preventDefault();
     if (!updateMessage.trim()) return;
-    onUpdate(task.id, currentUser.id, updateMessage.trim(), updateStatus);
+    onUpdate(task.id, currentUser.id, updateMessage.trim(), updateStatus, updateSubTaskId || undefined);
     setUpdateMessage('');
     setUpdateStatus(task.status);
+    setUpdateSubTaskId('');
     setShowUpdateModal(false);
   };
 
@@ -187,7 +206,18 @@ export default function TaskDetail({
         )}
       </div>
 
-      {/* Timeline Section */}
+      {/* Sub-tasks Section */}
+      <SubTaskSection
+        task={task}
+        users={users}
+        currentUser={currentUser}
+        onAddSubTask={onAddSubTask}
+        onUpdateSubTask={onUpdateSubTask}
+        onDeleteSubTask={onDeleteSubTask}
+        onOpenUpdateModal={handleOpenUpdateModal}
+      />
+
+      {/* Unified Timeline Section — Always Visible */}
       <div className="timeline-section">
         <div className="timeline-title">
           <i className="fa-solid fa-clock-rotate-left"></i>
@@ -199,6 +229,7 @@ export default function TaskDetail({
             {[...task.updates].reverse().map((update) => {
               const updateUser = users.find((u) => u.id === update.userId);
               const updateStatus = update.newStatus;
+              const linkedSubTask = update.subTaskId && subTasks.find((s) => s.id === update.subTaskId);
               const canEdit =
                 currentUser &&
                 (currentUser.id === update.userId || currentUser.id === 'kay' || currentUser.id === task.createdBy);
@@ -238,6 +269,14 @@ export default function TaskDetail({
                         )}
                       </div>
                     </div>
+
+                    {linkedSubTask && (
+                      <div className="timeline-subtask-tag">
+                        <i className="fa-solid fa-list-check"></i>
+                        <span>งานย่อย: {linkedSubTask.title}</span>
+                      </div>
+                    )}
+
                     <p className="timeline-message">{update.message}</p>
                     {update.newStatus && (
                       <div className="timeline-status-change">
@@ -260,12 +299,12 @@ export default function TaskDetail({
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons — Always Visible */}
       <div className="update-bar">
         <div className="btn-group" style={{ flexDirection: 'column', gap: 8 }}>
           <button
             className="btn btn-primary"
-            onClick={() => setShowUpdateModal(true)}
+            onClick={() => handleOpenUpdateModal('')}
             id="open-update-btn"
           >
             <i className="fa-solid fa-comment-medical"></i>
@@ -321,20 +360,53 @@ export default function TaskDetail({
               </button>
             </div>
             <form onSubmit={handleSubmitUpdate} className="modal-body">
+              {/* If subtasks exist, allow choosing target */}
+              {subTasks.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label">อัพเดทเกี่ยวกับ</label>
+                  <CustomSelect
+                    value={updateSubTaskId}
+                    onChange={(val) => {
+                      setUpdateSubTaskId(val);
+                      if (val) {
+                        const sub = subTasks.find((s) => s.id === val);
+                        if (sub) setUpdateStatus(sub.status);
+                      } else {
+                        setUpdateStatus(task.status);
+                      }
+                    }}
+                    options={[
+                      { value: '', label: '📁 ภาพรวมของเคส', icon: '📁' },
+                      ...subTasks.map((s, idx) => ({
+                        value: s.id,
+                        label: `${idx + 1}. ${s.title}`,
+                        icon: '📋',
+                      })),
+                    ]}
+                    placement="down"
+                    id="update-target-sel"
+                  />
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">ข้อความ *</label>
                 <textarea
                   className="form-textarea"
-                  placeholder="เช่น ส่งเอกสารให้ศาลเรียบร้อยแล้ว..."
+                  placeholder="เช่น ส่งเอกสารให้ศาลเรียบร้อยแล้ว, ตรวจสอบสัญญาฉบับร่างแล้ว..."
                   value={updateMessage}
                   onChange={(e) => setUpdateMessage(e.target.value)}
                   rows={3}
                   required
+                  autoFocus
                   id="update-msg-input"
                 />
               </div>
+
               <div className="form-group">
-                <label className="form-label">เปลี่ยนสถานะ</label>
+                <label className="form-label">
+                  เปลี่ยนสถานะ {updateSubTaskId ? '(ของงานย่อยนี้)' : '(ของเคส)'}
+                </label>
                 <CustomSelect
                   value={updateStatus}
                   onChange={setUpdateStatus}
@@ -343,6 +415,7 @@ export default function TaskDetail({
                   id="update-status-sel"
                 />
               </div>
+
               <button type="submit" className="btn btn-primary" id="submit-update-btn">
                 <i className="fa-solid fa-paper-plane"></i>
                 ส่งอัพเดท
@@ -380,6 +453,7 @@ export default function TaskDetail({
           </div>
         </div>
       )}
+
       {/* Edit Update Message Modal */}
       {editingUpdate && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditingUpdate(null)}>

@@ -132,14 +132,46 @@ export function exportTasksToPdf(tasks, users, currentUser) {
     if (task.updates.length > 0) {
       html += `<div class="updates"><strong style="font-size:12px;">ประวัติความคืบหน้า:</strong>`;
       task.updates.forEach((upd) => {
+        const linkedSub = upd.subTaskId && task.subTasks ? task.subTasks.find(s => s.id === upd.subTaskId) : null;
         html += `
           <div class="update-item">
             <span class="update-user">${getUserName(upd.userId)}</span>
             <span class="update-time"> — ${formatDateTime(upd.timestamp)}${upd.isEdited ? ' (แก้ไขแล้ว)' : ''}</span>
+            ${linkedSub ? `<br/><span style="font-size:11px; color:#d97706; font-weight:700;">📋 งานย่อย: ${linkedSub.title}</span>` : ''}
             <br/>${upd.message}
             ${upd.newStatus ? ` <span class="badge ${upd.newStatus}" style="margin-left:4px;">${STATUS_LABELS[upd.newStatus]}</span>` : ''}
           </div>
         `;
+      });
+      html += `</div>`;
+    }
+
+    // Sub-tasks
+    if (task.subTasks && task.subTasks.length > 0) {
+      const stDone = task.subTasks.filter(s => s.status === 'completed').length;
+      html += `<div class="updates"><strong style="font-size:12px;">งานย่อย (${stDone}/${task.subTasks.length} เสร็จ):</strong>`;
+      task.subTasks.forEach((sub, si) => {
+        const subAssignees = (sub.assignees || []).map(id => getUserName(id)).join(', ');
+        html += `
+          <div class="update-item" style="padding: 6px 0 4px;">
+            <span class="update-user">${si + 1}. ${sub.title}</span>
+            <span class="badge ${sub.status}" style="margin-left:6px;">${STATUS_LABELS[sub.status] || sub.status}</span>
+            ${sub.deadline ? `<span class="update-time" style="margin-left:6px;">กำหนด: ${formatDate(sub.deadline)}</span>` : ''}
+            ${subAssignees ? `<span class="update-time" style="margin-left:6px;">ผู้รับผิดชอบ: ${subAssignees}</span>` : ''}
+          </div>
+        `;
+        if (sub.updates && sub.updates.length > 0) {
+          sub.updates.forEach((upd) => {
+            html += `
+              <div class="update-item" style="padding-left: 16px; font-size: 11px;">
+                <span class="update-user">${getUserName(upd.userId)}</span>
+                <span class="update-time"> — ${formatDateTime(upd.timestamp)}</span>
+                <br/>${upd.message}
+                ${upd.newStatus ? ` <span class="badge ${upd.newStatus}" style="margin-left:4px; font-size: 10px;">${STATUS_LABELS[upd.newStatus]}</span>` : ''}
+              </div>
+            `;
+          });
+        }
       });
       html += `</div>`;
     }
@@ -488,14 +520,20 @@ export function exportSingleTaskToPdf(task, users, currentUser) {
                 </tr>
               </thead>
               <tbody>
-                ${task.updates.map((u) => `
+                ${task.updates.map((u) => {
+                  const linkedSub = u.subTaskId && task.subTasks ? task.subTasks.find(s => s.id === u.subTaskId) : null;
+                  return `
                   <tr>
                     <td style="color: #64748b;">${formatDateTime(u.timestamp)}</td>
                     <td><strong>${getUserName(u.userId)}</strong></td>
-                    <td>${u.message}${u.isEdited ? ' <span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(แก้ไขแล้ว)</span>' : ''}</td>
+                    <td>
+                      ${linkedSub ? `<span style="font-size:10.5px; color:#d97706; font-weight:700; display:block; margin-bottom:2px;">📋 งานย่อย: ${linkedSub.title}</span>` : ''}
+                      ${u.message}${u.isEdited ? ' <span style="font-size: 10px; color: #94a3b8; font-weight: normal;">(แก้ไขแล้ว)</span>' : ''}
+                    </td>
                     <td><span class="doc-tag ${u.newStatus || task.status}">${STATUS_LABELS[u.newStatus || task.status]}</span></td>
                   </tr>
-                `).join('')}
+                `;
+                }).join('')}
               </tbody>
             </table>
           ` : `
@@ -503,6 +541,81 @@ export function exportSingleTaskToPdf(task, users, currentUser) {
           `}
         </div>
       </div>
+
+      ${task.subTasks && task.subTasks.length > 0 ? (() => {
+        const stDone = task.subTasks.filter(s => s.status === 'completed').length;
+        let subHtml = `
+          <div class="section-card">
+            <div class="section-head" style="background: #fefce8; color: #854d0e; border-bottom: 1px solid #fde68a;">
+              <span>📋 รายการงานย่อย (${stDone}/${task.subTasks.length} เสร็จ)</span>
+            </div>
+            <div class="section-body" style="padding: 0;">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 30%;">ชื่องาน</th>
+                    <th style="width: 15%;">สถานะ</th>
+                    <th style="width: 20%;">ผู้รับผิดชอบ</th>
+                    <th style="width: 15%;">กำหนดส่ง</th>
+                    <th style="width: 15%;">อัพเดท</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+        task.subTasks.forEach((sub, si) => {
+          const subAssignees = (sub.assignees || []).map(id => getUserName(id)).join(', ') || '-';
+          const subUpdatesCount = (sub.updates || []).length;
+          subHtml += `
+            <tr>
+              <td>${si + 1}</td>
+              <td><strong>${sub.title}</strong></td>
+              <td><span class="doc-tag ${sub.status}">${STATUS_LABELS[sub.status] || sub.status}</span></td>
+              <td>${subAssignees}</td>
+              <td>${sub.deadline ? formatDate(sub.deadline) : '-'}</td>
+              <td>${subUpdatesCount} รายการ</td>
+            </tr>
+          `;
+        });
+        subHtml += `</tbody></table></div></div>`;
+
+        // Individual sub-task timelines
+        task.subTasks.forEach((sub, si) => {
+          if (sub.updates && sub.updates.length > 0) {
+            subHtml += `
+              <div class="section-card" style="margin-top: 8px;">
+                <div class="section-head gray">
+                  <span>🕒 ประวัติงานย่อย #${si + 1}: ${sub.title} (${sub.updates.length} รายการ)</span>
+                </div>
+                <div class="section-body" style="padding: 0;">
+                  <table class="timeline-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 25%;">วัน - เวลา</th>
+                        <th style="width: 20%;">ผู้บันทึก</th>
+                        <th style="width: 40%;">รายละเอียด</th>
+                        <th style="width: 15%;">สถานะ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${sub.updates.map((u) => `
+                        <tr>
+                          <td style="color: #64748b;">${formatDateTime(u.timestamp)}</td>
+                          <td><strong>${getUserName(u.userId)}</strong></td>
+                          <td>${u.message}${u.isEdited ? ' <span style="font-size: 10px; color: #94a3b8;">(แก้ไขแล้ว)</span>' : ''}</td>
+                          <td>${u.newStatus ? `<span class="doc-tag ${u.newStatus}">${STATUS_LABELS[u.newStatus]}</span>` : '-'}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        return subHtml;
+      })() : ''}
 
       <div class="signature-section">
         <div class="sig-block">
